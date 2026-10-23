@@ -9,7 +9,7 @@ description = "CLI and teaching demos using the Looktech EDU glasses SDK"
 readme = "README.md"
 requires-python = ">=3.9"
 dependencies = [
-    "edu-glasses-host[macos,audio,serial] @ git+https://github.com/Entertech/edu-glasses-host.git@7bbe303647e5624395f75e34c462e01ceeaac214",
+    "edu-glasses-host[macos,audio,serial] @ git+https://github.com/Entertech/edu-glasses-host.git@b67568809ebb71e67f173cebd7b46351a2bd260f",
 ]
 
 [project.optional-dependencies]
