@@ -55,7 +55,7 @@ from edu_host import EduSession, EduClientError, EduStatusError, EduTimeoutError
 from edu_host import WifiSecurity
 from edu_host.capture import CaptureError, CaptureState, CaptureTimeoutError
 from edu_host.ota_client import OTAError
-from edu_host.protocol import (ButtonEvent, ButtonId, KeyAction, CompletedImage, DeviceInfo, EduEvent, LedColor,
+from edu_host.protocol import (AudioRecordRequestEvent, ButtonEvent, ButtonId, KeyAction, CompletedImage, DeviceInfo, EduEvent, LedColor,
                                LedId, LedMode, LedSpeed, SensorData, Status, Tone)
 from edu_host.transport import list_serial_ports
 
@@ -78,6 +78,7 @@ Commands:
   media close              stop the owned HTTP/STA session
   record start [out.wav]   start mic recording
   record stop              stop mic recording and finalize the WAV file
+  capture status           observe device photo/video state (including native buttons)
   ota <firmware.bin>       upgrade firmware over OTA SPP 0x2026
   reboot                   reboot the glasses (~0.5s after the reply)
   led <inner|outer> <off|on|blink|breath> [color] [speed]
@@ -88,6 +89,8 @@ Commands:
 Asynchronous device events (buttons, knob, audio/img state) print live.
 Right CAPTURE key: single = photo-save; hold = video start; press while recording = stop.
 Capture LEDs follow the firmware's shared photo/video lifecycle. Triple-then-hold stays pairing.
+With NATIVE_INPUT, firmware handles capture; this demo only observes raw capture events.
+Native audio double-click requests PC recording; a press stops it (PC audio channel required).
 """
 
 
@@ -111,7 +114,10 @@ class CaptureButtons:
 
     def __init__(self, session: EduSession) -> None:
         self.session = session
-        self.enabled = all(session.supports(name) for name in ('INPUT_EVENTS', 'MEDIA_CATALOG', 'SAVED_PHOTO', 'VIDEO'))
+        self.native = session.supports('NATIVE_INPUT')
+        self.enabled = not self.native and all(session.supports(name) for name in
+                                              ('INPUT_EVENTS', 'MEDIA_CATALOG', 'SAVED_PHOTO', 'VIDEO'))
+        self._audio_request = None
         self.pending = None
         self.video_operation = None
         self.busy = False
@@ -121,6 +127,12 @@ class CaptureButtons:
         self._next_status = 0.0
 
     def on_event(self, event: EduEvent) -> None:
+        if self.native and isinstance(event, AudioRecordRequestEvent):
+            if not event.start or not self.busy:
+                self._audio_request = (event.start, time.monotonic())
+            else:
+                print('[buttons] audio start ignored while CLI is busy')
+            return
         if not self.enabled or not isinstance(event, ButtonEvent):
             return
         if event.btn != ButtonId.CAPTURE:
@@ -159,6 +171,21 @@ class CaptureButtons:
         self._next_status = time.monotonic() + 1.0
 
     def poll(self) -> None:
+        if self._audio_request is not None:
+            (start, queued_at), self._audio_request = self._audio_request, None
+            self.busy = True
+            try:
+                if start and time.monotonic() - queued_at > 5.0:
+                    print('[buttons] expired audio start ignored')
+                elif start and not self.session.is_recording:
+                    filename = 'record-%d.wav' % time.time_ns()
+                    print('[buttons] recording -> %s' % self.session.record_start(filename))
+                elif not start and self.session.is_recording:
+                    print('[buttons] recording stopped: %s' % self.session.record_stop())
+            except (EduClientError, ValueError, OSError) as exc:
+                print('[buttons] audio request failed: %s' % exc)
+            finally:
+                self.busy = False
         if self.video_operation is None or time.monotonic() < self._next_status:
             return
         self._next_status = time.monotonic() + 1.0
@@ -358,7 +385,9 @@ def run_session(session: EduSession, ota_chunk_size: int = 512,
     print(HELP_TEXT)
     buttons = CaptureButtons(session)
     session.add_event_listener(buttons.on_event)
-    if not buttons.enabled:
+    if buttons.native:
+        print('[buttons] native firmware controls capture; host capture mapping disabled')
+    elif not buttons.enabled:
         print('[buttons] capture mapping unavailable; requires INPUT_EVENTS/MEDIA_CATALOG/SAVED_PHOTO/VIDEO')
 
     lines = queue.Queue()
@@ -403,6 +432,8 @@ def run_session(session: EduSession, ota_chunk_size: int = 512,
                     print(HELP_TEXT)
                 elif cmd == "info":
                     print_info(session.info())
+                elif cmd == "capture" and args[1:] == ["status"]:
+                    print(session.get_capture_state())
                 elif cmd == "sensors":
                     print_sensors(session.sensors())
                 elif cmd == 'photo-save':

@@ -220,27 +220,25 @@ media_import 在交互空档保活约30秒，退出释放所属 HTTP/STA。CTRL�
 
 ### CLI 右侧按键拍摄
 
-新版固件声明 INPUT_EVENTS、MEDIA_CATALOG、SAVED_PHOTO 和 VIDEO 时，`demo_cli.py`
-默认把右侧拍照键（CAPTURE）的事件映射为现有 CLI 命令：
+固件声明 `NATIVE_INPUT` 时，按键直接在固件执行：单击存储拍照、长按录像、再按停止。
+PC 只显示原始事件及 `DeviceCaptureState`；`capture status` 可随时只读查询设备状态。
+本地任务不随 PC 断开取消，CLI `video stop/status` 仍仅针对本会话 SDK operation，不能接管本地录像。
+灯效、提示音、录像配置与保护沿用共享业务流程，三击后长按配对保持优先。
 
-| 操作 | PC demo 执行 | 眼镜灯效 |
-|---|---|---|
-| 单击 | `photo-save`，在眼镜保存原片 | 拍摄完成后内外白灯闪一次 |
-| 长按 | `video start` | 沿用公版录像白灯常亮 |
-| 录像中再次按下 | `video stop`，等待公版 DONE | 实际停止、释放后恢复原灯态 |
+没有 NATIVE_INPUT、但具备 INPUT_EVENTS/MEDIA_CATALOG/SAVED_PHOTO/VIDEO 的旧固件，
+CLI 继续将右侧单击/长按/录像中按下映射为 photo-save/video start/video stop。
+缺少所需能力时只显示事件。旧映射仍有手势去重、配对窗口抑制及超时不重拍。
 
-固件仍只旁路上报按键；PC demo 在主线程通过 SDK 发 SPP 命令，LED 和资源生命周期
-继续由共享固件能力管理，没有额外发送 `led` 命令覆盖业务灯效。SDK/Notebook 的普通
-事件回调不自动绑定这些动作。旧固件缺少上述能力时仍打印事件，并明确提示无法启用映射。
+原生录音双击遵循设备双击配置，固件发送 `AudioRecordRequestEvent` 意图，收到后 CLI
+在主循环准备唯一的 `record-<时间>.wav` 再调用 `record_start`。固件按键停止先执行共用停止流程，
+CLI 收到停止意图后调用 `record_stop` 完成文件。需要 AUDIO 通道和 libopus/opuslib；SDK 本身不自动录音。
+CLI 忙碌时不接受开始意图，排队超过5秒丢弃；停止意图优先覆盖待开始意图。无PC不做离线录音。
 
-一次短按包含 SHORT 和 SINGLE，demo 只在完整 SINGLE 事件后拍一次；LONG/REPEAT
-不会重复开录像，停止录像那次按键的抬起和后续单击也不再拍照。三击后的十秒配对窗口
-不触发拍摄，保留“三击后长按”的配对手势。CLI 正在执行命令期间不积压拍摄请求；
-录像启动过程中再次按下可排队请求停止。`wait` 期间仍实时处理按键，录像自动结束后
-通过状态查询恢复单击拍照。失败/超时如实打印，不自动重拍。
+请先升级 SDK/demo，再更新原生输入固件，旧 demo 不识别新能力，可能重复拍摄。
+`ButtonEvent`/`KnobEvent` 格式兼容，开发者仍可自定义观察；同一拍摄键不要重复发拍摄命令。
+AI/翻译完整 PC 服务本次不提供。原生按键时序、灯效、音频文件尚待实机验收，本轮不烧录。
 
-这里的照片保存在眼镜上，之后用 `media open`、`media list`、`media download` 导出。
-原有 `photo [out.jpg]` 仍用于教学小图回传。
+照片/视频保存在眼镜，之后用 `media open/list/download` 导出。原有 `photo [out.jpg]` 仍是教学小图。
 
 ## 兼容范围与实机回归（2026-10-16）
 
@@ -399,6 +397,7 @@ python3 demo_cli.py --ctrl-port <CTRL> [--audio-port <AUDIO>] \
 | `info`                   | 固件版本、电量 %、充电状态                                       |
 | `sensors`                | 光敏**原始计数**（非 lux）、电池温度（℃）、蓝牙芯片结温（℃）    |
 | `photo [out.jpg]`        | 拍一张照；JPEG 异步到达后自动保存                                |
+| `capture status` | 只读观察设备照片/视频来源、控制状态，不授予操作权 |
 | `record start [out.wav]` | 开始麦克风录音                                                   |
 | `record stop`            | 停止录音，打印统计（包数/帧数/丢包）                             |
 | `ota <firmware.bin>`     | 经 OTA SPP `0x2026` 升级固件（升级包由固件维护方提供）           |

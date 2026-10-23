@@ -4,12 +4,12 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "edu-glasses-demo"
-version = "0.1.0"
+version = "0.2.0"
 description = "CLI and teaching demos using the Looktech EDU glasses SDK"
 readme = "README.md"
 requires-python = ">=3.9"
 dependencies = [
-    "edu-glasses-host[macos,audio,serial] @ git+https://github.com/Entertech/edu-glasses-host.git@3223df70798bd7075a2a642c92f97412fca437c1",
+    "edu-glasses-host[macos,audio,serial] @ git+https://github.com/Entertech/edu-glasses-host.git@30a7d76c4bbc117e997db564fa1fa7b38d71920d",
 ]
 
 [project.optional-dependencies]
