@@ -232,7 +232,7 @@ CLI 继续将右侧单击/长按/录像中按下映射为 photo-save/video start
 原生录音双击遵循设备双击配置，固件发送 `AudioRecordRequestEvent` 意图，收到后 CLI
 在主循环准备唯一的 `record-<时间>.wav` 再调用 `record_start`。固件按键停止先执行共用停止流程，
 CLI 收到停止意图后调用 `record_stop` 完成文件。需要 AUDIO 通道和 libopus/opuslib；SDK 本身不自动录音。
-CLI 忙碌时不接受开始意图，排队超过5秒丢弃；停止意图优先覆盖待开始意图。无PC不做离线录音。
+CLI 忙碌区间内收到的开始意图即使在命令失败后才投递也丢弃；按帧接收时间计算，超过5秒丢弃；停止意图优先覆盖待开始意图。无PC不做离线录音。
 
 请先升级 SDK/demo，再更新原生输入固件，旧 demo 不识别新能力，可能重复拍摄。
 `ButtonEvent`/`KnobEvent` 格式兼容，开发者仍可自定义观察；同一拍摄键不要重复发拍摄命令。

@@ -118,6 +118,7 @@ class CaptureButtons:
         self.enabled = not self.native and all(session.supports(name) for name in
                                               ('INPUT_EVENTS', 'MEDIA_CATALOG', 'SAVED_PHOTO', 'VIDEO'))
         self._audio_request = None
+        self._audio_ready_at = time.monotonic()
         self.pending = None
         self.video_operation = None
         self.busy = False
@@ -128,10 +129,10 @@ class CaptureButtons:
 
     def on_event(self, event: EduEvent) -> None:
         if self.native and isinstance(event, AudioRecordRequestEvent):
-            if not event.start or not self.busy:
-                self._audio_request = (event.start, time.monotonic())
+            if not event.start or (not self.busy and event.received_at >= self._audio_ready_at):
+                self._audio_request = (event.start, event.received_at)
             else:
-                print('[buttons] audio start ignored while CLI is busy')
+                print('[buttons] audio start ignored during a CLI command')
             return
         if not self.enabled or not isinstance(event, ButtonEvent):
             return
@@ -163,6 +164,10 @@ class CaptureButtons:
             return
         self._consumed = True
 
+    def finish_command(self) -> None:
+        self._audio_ready_at = time.monotonic()
+        self.busy = False
+
     def observe(self, result) -> None:
         if result.kind != 2:
             return
@@ -185,7 +190,7 @@ class CaptureButtons:
             except (EduClientError, ValueError, OSError) as exc:
                 print('[buttons] audio request failed: %s' % exc)
             finally:
-                self.busy = False
+                self.finish_command()
         if self.video_operation is None or time.monotonic() < self._next_status:
             return
         self._next_status = time.monotonic() + 1.0
@@ -528,7 +533,7 @@ def run_session(session: EduSession, ota_chunk_size: int = 512,
             except (EduClientError, ValueError, OSError) as exc:
                 print("error: %s" % exc)
             finally:
-                buttons.busy = False
+                buttons.finish_command()
                 buttons.starting_video = False
             print("edu> ", end="", flush=True)
     except KeyboardInterrupt:
