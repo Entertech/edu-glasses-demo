@@ -9,7 +9,7 @@ App 升级准备、帮助中心、Python 安装，以及拍摄、录音和 WiFi 
 
 ## 安装与运行
 
-本次 demo 0.3.0 对应 SDK 0.5.0；需先完成 SDK 首次 PyPI 发布，以下安装才可用。
+demo 0.3.0 使用已发布的 [SDK 0.5.0](https://pypi.org/project/edu-glasses-host/0.5.0/)，安装时自动拉取对应平台的二进制 wheel。
 支持的 Python/平台见[开发者指南](docs/SDK_GUIDE.md#5-准备-python-环境并安装)。
 
 Python 3.9+、Git。先在系统蓝牙设置配对烧录EDU固件的`EDU-Glasses-xxxx`眼镜。

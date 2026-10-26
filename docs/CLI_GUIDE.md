@@ -11,7 +11,7 @@ Looktech 眼镜**教育版固件**的上位机演示程序，通过四条经典�
 
 ## EDU 集成版本
 
-SDK 0.5.0 首次 PyPI 发布完成后，安装命令才可用；平台要求见[开发者指南](SDK_GUIDE.md#5-准备-python-环境并安装)。
+SDK 0.5.0 已提供 [PyPI 二进制发行包](https://pypi.org/project/edu-glasses-host/0.5.0/)；平台要求见[开发者指南](SDK_GUIDE.md#5-准备-python-环境并安装)。
 
 当前接入版本为独立 demo **0.3.0**、SDK **0.5.0**，配套固件为
 Looktech-Glasses-Device / feat/edu-main-integration（内部维护资料）。

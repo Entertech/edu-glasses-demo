@@ -103,7 +103,7 @@ EDU 下载默认保留眼镜原件，删除使用显式接口。原生按键和 
 ## 5. 准备 Python 环境并安装
 
 要求标准 **CPython 3.9–3.14**。SDK 从 PyPI 安装二进制 wheel，不需要实现仓库权限、Git 或本机编译器；只集成 SDK 时不必安装 demo。
-**SDK 0.5.0 首次 PyPI 发布完成后，下面的安装命令才可用。** 自己的项目可在 `requirements.txt` 固定同一发行版本。
+[SDK 0.5.0 已发布到 PyPI](https://pypi.org/project/edu-glasses-host/0.5.0/)。自己的项目可在 `requirements.txt` 固定同一发行版本。
 
 | 系统 | wheel 架构 |
 |---|---|

@@ -1,7 +1,7 @@
 # AGENTS.md — edu-glasses-demo
 
 本仓库维护`demo_cli.py`、教学Notebook、耳机示例及CLI操作技能。
-SDK通过`pyproject.toml`固定PyPI版本安装；源码在内部SDK仓库维护，公开接口见`docs/API_REFERENCE.md`。
+SDK通过`pyproject.toml`固定PyPI版本安装；源码在独立SDK仓库维护，公开接口见`docs/API_REFERENCE.md`。
 
 ## 修改与验证
 
