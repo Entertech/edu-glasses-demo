@@ -1,9 +1,16 @@
 # Looktech EDU 眼镜 Demo
 
-基于独立[Python SDK](https://github.com/Entertech/edu-glasses-host/tree/feat/edu-sdk-integration)
+基于独立 Python SDK `edu-glasses-host`
 调用眼镜能力。包含CLI、五本教学Notebook与耳机示例；通过pip安装SDK依赖，仓库内不复制`edu_host`实现。
 
+首次接入请从[Python SDK 开发者指南](docs/SDK_GUIDE.md)开始：产品介绍、EDU 固件准备、
+App 升级准备、帮助中心、Python 安装，以及拍摄、录音和 WiFi 导出的完整接入示例。
+其中 EDU 固件发放入口和 App 内具体升级步骤仍待补充，当前为接入文档草稿。
+
 ## 安装与运行
+
+本次 demo 0.3.0 对应 SDK 0.5.0；需先完成 SDK 首次 PyPI 发布，以下安装才可用。
+支持的 Python/平台见[开发者指南](docs/SDK_GUIDE.md#5-准备-python-环境并安装)。
 
 Python 3.9+、Git。先在系统蓝牙设置配对烧录EDU固件的`EDU-Glasses-xxxx`眼镜。
 
@@ -17,7 +24,7 @@ python -m pip install -e .
 edu-glasses --bt auto
 ```
 
-安装会拉取已固定commit的SDK及CLI原有依赖；macOS自动安装IOBluetooth绑定，
+安装会从 PyPI 拉取固定版本 0.5.0 的二进制 SDK 及 CLI 依赖；macOS自动安装IOBluetooth绑定，
 Windows/Linux蓝牙使用标准库socket。WAV解码另需系统libopus，否则保留`.opusraw`。
 首次运行macOS需要授予终端或Python宿主蓝牙权限。
 源码方式也可运行`python demo_cli.py --bt auto`，多台眼镜时用明确地址替换`auto`。
@@ -52,7 +59,7 @@ CLI保留原始事件显示，并关闭旧拍摄映射以免重复触发；旧�
 录音双击依公版配置请求PC准备文件，CLI在主循环先打开`captures/record-<时间>.wav`再启动录音；
 按键停止时完成文件。CLI忙碌区间内的开始请求会被忽略，即使命令失败后才投递；接收后超过5秒也不延迟开麦。需要音频通道及解码依赖。
 旋钮音量、媒体/通话键沿用固件行为。原始事件仍可自定义观察；AI/翻译完整服务本次未提供。
-请先安装新版SDK/demo再更新固件，旧demo可能重复拍摄。本轮未烧录实测。
+请先安装新版SDK/demo再更新固件，旧demo可能重复拍摄。实际验收范围见[开发者指南](docs/SDK_GUIDE.md#16-兼容性与已知限制)。
 录音、教学小图、LED、提示音、OTA、串口后备与管道调用，见[CLI完整使用说明](docs/CLI_GUIDE.md)。
 `help`列出当前命令。自己的应用直接调用SDK，不解析CLI打印文本。
 
@@ -82,16 +89,17 @@ python examples/headset_demo.py list
 
 ## SDK集成与维护
 
-- 只开发应用：[SDK安装和使用说明](https://github.com/Entertech/edu-glasses-host/blob/feat/edu-sdk-integration/docs/SDK_GUIDE.md)。
-- 完整线协议：[PROTOCOL.md](https://github.com/Entertech/edu-glasses-host/blob/feat/edu-sdk-integration/docs/PROTOCOL.md)。
+- 外部应用接入：[Python SDK 开发者指南](docs/SDK_GUIDE.md)。
+- 接口参数和返回类型：[SDK 接口参考](docs/API_REFERENCE.md)。
+- SDK 二进制包从 PyPI 安装，使用者不需要实现仓库权限。
 - SDK/demo拆分来源：`Entertech/edu-glasses-host@82f6493fc59703ccffbc0c1d005712aaaac18ade`。
   CLI调用及按键行为保持原样，原有3项CLI检查随代码迁入本仓库。
-- 更新SDK时修改`pyproject.toml`中的固定commit，并验证安装、既有CLI检查及所影响能力。
+- 更新SDK时修改`pyproject.toml`中的固定版本，并验证安装、既有CLI检查及所影响能力。
 
 ```bash
 python -m unittest discover -s tests -v
 python demo_cli.py --help
 ```
 
-不包含固件或WiFi凭据。实机功能结论沿用SDK文档中的2026-10-21验收记录；
-本轮仓库拆分验证安装及调用入口，不代表重跑了实机或系统保护矩阵。
+不包含当前固件发行包或WiFi凭据。验收记录按版本区分，见开发者指南中的兼容性与已知限制；
+示例入口检查不代表完成全部平台、App升级或系统保护矩阵的实测。

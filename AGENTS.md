@@ -1,14 +1,13 @@
 # AGENTS.md — edu-glasses-demo
 
 本仓库维护`demo_cli.py`、教学Notebook、耳机示例及CLI操作技能。
-SDK通过`pyproject.toml`固定Git commit安装，源码与协议在独立的
-[edu-glasses-host](https://github.com/Entertech/edu-glasses-host/tree/feat/edu-sdk-integration)仓库维护。
+SDK通过`pyproject.toml`固定PyPI版本安装；源码在内部SDK仓库维护，公开接口见`docs/API_REFERENCE.md`。
 
 ## 修改与验证
 
 1. 所有眼镜SPP能力调用复用已安装的`edu_host`。SDK源码、协议解析和设备生命周期管理在SDK仓库修改。
 2. CLI线程/macOS路径共用`run_session`；命令变化同步`HELP_TEXT`、README与`docs/CLI_GUIDE.md`，保留stdin管道调用。
-3. SDK更新时修改固定commit，先验证独立环境安装。只复制演示调用，不添加邻接源码树到`sys.path`。
+3. SDK更新时修改固定发行版本，先验证独立环境安装。只复制演示调用，不添加邻接源码树到`sys.path`。
 4. macOS的SDK请求在主线程顺序执行，等待使用`wait()/poll()`；按键回调只排队，由主循环执行拍摄。
 5. 执行既有检查与入口验证：
 
