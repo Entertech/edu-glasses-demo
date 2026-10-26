@@ -1,18 +1,21 @@
 > CLI与教学示例已迁移到`Entertech/edu-glasses-demo`。安装入口见[Demo README](../README.md)，
-> SDK接口、协议与固件记录在独立SDK仓库维护。下文保留原有CLI操作、连接排障和历史验收说明。
+> 公开SDK接口见`docs/API_REFERENCE.md`，实现与固件记录由内部维护。下文保留原有CLI操作、连接排障和历史验收说明。
 
 # Looktech EDU CLI完整使用说明
 
 Looktech 眼镜**教育版固件**的上位机演示程序，通过四条经典蓝牙 SPP 服务与眼镜通信。
 
-开发者接入请先阅读 **[SDK 使用说明](https://github.com/Entertech/edu-glasses-host/blob/feat/edu-sdk-integration/docs/SDK_GUIDE.md)**：安装与连接、能力发现、
-拍摄/录音、事件自定义、WiFi 媒体导出、错误处理及 API 索引。线协议开发见
-[PROTOCOL.md](https://github.com/Entertech/edu-glasses-host/blob/feat/edu-sdk-integration/docs/PROTOCOL.md)；本文保留 CLI 快速体验和历史兼容记录。
+开发者接入请先阅读 **[Python SDK 开发者指南](SDK_GUIDE.md)**：产品与 EDU 固件准备、安装与连接、能力发现、
+拍摄/录音、事件自定义、WiFi 媒体导出、错误处理及 API 索引。详细参数见
+[公开 API 参考](API_REFERENCE.md)；本文保留 CLI 快速体验和历史兼容记录。
 
 ## EDU 集成版本
 
-本 README 对应 独立demo及SDK `feat/edu-sdk-integration` 的 **0.3.0候选**，配套固件为
-[Looktech-Glasses-Device / feat/edu-main-integration](https://github.com/Entertech/Looktech-Glasses-Device/tree/feat/edu-main-integration)。
+SDK 0.5.0 已提供 [PyPI 二进制发行包](https://pypi.org/project/edu-glasses-host/0.5.0/)；平台要求见[开发者指南](SDK_GUIDE.md#5-准备-python-环境并安装)。
+
+当前接入版本为独立 demo **0.3.0**、SDK **0.5.0**，配套固件为
+Looktech-Glasses-Device / feat/edu-main-integration（内部维护资料）。
+下列迁入、构建与旧产物说明保留历史背景；当前能力及验收范围以开发者指南为准。
 固件从 main `813ee9999eaefcdb830053d2faec65f0e2bff2c5` 迁入旧 `feat/edu-spp`
 的 EDU v1 能力，保留教学功能、重启、LED、提示音和 OTA；截至 2026-10-21，
 当前功能固件源提交为 `9b1439a3`，SDK 当前分支支持存储拍照、录像配置及
@@ -27,13 +30,13 @@ Mac 每条原生通道使用独立进程主 run loop，避免关闭 IMG/AUDIO/OT
 App 绑定、业务鉴权和 RPC 路径保留；EDU 通过系统经典蓝牙配对后直连 PC SPP，
 不广播 BLE、不注册 App GATT/iAP2 业务入口，不能直接作为公版 App 固件使用。
 两种固件保留经典 A2DP/HFP/AVRCP。详细隔离和构建说明见
-[固件 README](https://github.com/Entertech/Looktech-Glasses-Device/blob/feat/edu-main-integration/README.md)。
+固件 README（内部维护资料）。
 
 HELLO/caps 用于版本与功能发现，不提供业务鉴权或学生/维护者权限分级。当前开放
 8 条原有命令及 WiFi、存储拍照、录像和 ID 媒体目录扩展，OTA 使用独立通道；
 未开放 IMU、WiFi P2P、LTAU 或通用 App RPC。以 HELLO 能力及实际 ISP 查询结果为准。
 
-配套的可追溯固件位于 [`firmware/`](https://github.com/Entertech/edu-glasses-host/blob/feat/edu-sdk-integration/firmware/README.md)：保留旧 `feat/edu-spp` 的 WPK，
+配套的可追溯固件位于 `firmware/`（内部维护资料）：保留旧 `feat/edu-spp` 的 WPK，
 新增基于 main 的 `stereo-edu` 集成候选 WPK 和可供 SDK 使用的 Looktech OTA 外层 `.bin`。
 清单记录源码提交、构建参数、大小与 SHA-256。其中保留的 2026-10-16 产物属于旧能力
 基线，不包含本轮存储拍摄和 LAN 导出扩展；新功能需固件维护者提供匹配当前分支的产物。
@@ -87,7 +90,7 @@ python3 -m pip install -e .
 ## Python SDK
 
 `edu_host.EduSession` 是普通 Python 程序、CLI 和 Notebook 共用的会话入口。
-安装本包无必选运行依赖；Windows/Linux 蓝牙直连使用标准库。macOS 可安装
+独立 SDK 的基础安装无必选运行依赖；Windows/Linux 蓝牙直连使用支持蓝牙 socket 的 Python 环境。demo 可安装
 `python3 -m pip install -e .`，CLI默认安装串口、macOS和OPUS所需Python依赖；WAV解码还需系统libopus。安装后也可运行 `edu-glasses --bt auto`。
 
 ```python
@@ -160,7 +163,7 @@ OTA 前须结束录音并等待拍照完成；升级期间拒绝其他设备请�
 未提供字段保留，设置设备级持久保存；拍照、录像或LAN导入忙碌时拒绝写入。
 涉及分辨率/方向时默认等待ISP确认，超时后继续查询，不自动重发。原`video_start(timeout=20)`
 的timeout仍是启动等待时间。CLI用`video config`查询，后接`--resolution`、`--orientation`、
-`--max-duration`设置。完整语义及示例见[SDK使用说明](https://github.com/Entertech/edu-glasses-host/blob/feat/edu-sdk-integration/docs/SDK_GUIDE.md#录像配置)。
+`--max-duration`设置。完整语义及示例见[SDK 使用说明](API_REFERENCE.md)。
 
 ## 存储照片、录像与 WiFi 原件导出
 
@@ -243,12 +246,12 @@ AI/翻译完整 PC 服务本次不提供。原生按键时序、灯效、音频�
 ## 兼容范围与实机回归（2026-10-16）
 
 本节记录旧能力基线的历史验收，不代表 2026-10-20 新增功能的完整矩阵。当前接口和
-验收边界见 [SDK 使用说明](https://github.com/Entertech/edu-glasses-host/blob/feat/edu-sdk-integration/docs/SDK_GUIDE.md#验收范围与已知边界)。
+验收边界见 [SDK 使用说明](SDK_GUIDE.md#16-兼容性与已知限制)。
 
 协议仍为 EDU v1：`A5 5A` 同步字、版本/seq/LE 长度/CRC16、单帧 990 B 上限，
 4 条 SPP UUID/默认通道、8 条命令、4 类事件及音频/图片/OTA 格式保持不变。
 8 条命令覆盖拍照、开始/停止录音、传感器、信息、重启、LED、提示音；事件为
-BUTTON、KNOB、AUDIO_STATE、IMG_STATE。完整契约见 [PROTOCOL.md](https://github.com/Entertech/edu-glasses-host/blob/feat/edu-sdk-integration/docs/PROTOCOL.md)。
+BUTTON、KNOB、AUDIO_STATE、IMG_STATE。完整契约见 PROTOCOL.md（内部维护资料）。
 功能按 HELLO_ACK caps 开放；设备没有声明的能力明确报错。
 
 | 组合 / 使用方式 | 兼容与验收边界 |
@@ -262,7 +265,7 @@ BUTTON、KNOB、AUDIO_STATE、IMG_STATE。完整契约见 [PROTOCOL.md](https://
 
 实测环境：LTFTDI07 7036AX **development 开发板**、macOS 27.0、Python 3.13.14、
 PyObjC 12.2.2、opuslib 3.0.1 与系统 libopus。SDK 核心提交 `4c972e2`、固件
-`eca5981f`；版本字段沿用既有值，请按源提交及 [固件 SHA-256 清单](https://github.com/Entertech/edu-glasses-host/blob/feat/edu-sdk-integration/firmware/README.md) 区分产物。
+`eca5981f`；版本字段沿用既有值，请按源提交及 固件 SHA-256 清单（内部维护资料） 区分产物。
 
 | 验收项目 | 实测结果 |
 |---|---|
@@ -276,8 +279,8 @@ PyObjC 12.2.2、opuslib 3.0.1 与系统 libopus。SDK 核心提交 `4c972e2`、�
 | 软件与清理 | 原有 58 项测试、py_compile、wheel 源码一致及独立导入通过；板端 AUDIO/IMG/OTA 全关闭，图传固定频率资源和通道进程已释放，串口空闲 |
 
 JPEG 均通过独立校验，WAV 检查有效非零 PCM；LED/提示音确认的是响应和执行日志。
-原始失败与修复后的证据均保留，细节见 [Mac 回归报告](https://github.com/Entertech/edu-glasses-host/blob/feat/edu-sdk-integration/docs/MAC_REGRESSION_20261016.md) 和
-[首轮公版/EDU 报告](https://github.com/Entertech/Looktech-Glasses-Device/blob/feat/edu-main-integration/docs/test/edu-integration-hardware-20261016.md)。
+原始失败与修复后的证据均保留，细节见 Mac 回归报告（内部维护资料） 和
+首轮公版/EDU 报告（内部维护资料）。
 原始 HCI/日志和 JPEG/WAV 只保存在本机忽略目录，未随分支上传。
 
 **尚未实测**：首次绑定/解绑、纯 origin/main 烧录 A/B、整机、其他 macOS 版本、
@@ -503,7 +506,7 @@ stopped. 250 packages, 2000 frames (~40.0 s), 0 lost package(s), 0 decode error(
 
 ## 5. 协议速览（Wire Format Quick Reference）
 
-完整协议规格见 [docs/PROTOCOL.md](https://github.com/Entertech/edu-glasses-host/blob/feat/edu-sdk-integration/docs/PROTOCOL.md)，以下为速览。
+完整协议规格见 docs/PROTOCOL.md（内部维护资料），以下为速览。
 
 ### 5.1 EDU-CTRL 帧格式（SPP UUID 0x2028）
 
@@ -595,7 +598,7 @@ N/2 秒且内容不可辨。
 ```
 edu-glasses-demo/
 ├── demo_cli.py             # 通过安装的SDK调用眼镜，支持交互与管道
-├── pyproject.toml          # 固定SDK Git依赖，注册edu-glasses命令
+├── pyproject.toml          # 固定SDK PyPI版本，注册edu-glasses命令
 ├── AGENTS.md               # coding agent操作指南
 ├── docs/CLI_GUIDE.md       # 本文
 ├── examples/headset_demo.py
