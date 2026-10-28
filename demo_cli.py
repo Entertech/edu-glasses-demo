@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Interactive demo CLI for the Looktech glasses education firmware.
+"""Interactive demo CLI for Looktech Glasses developer firmware.
 
 Demonstrates all five host-visible features:
 
@@ -50,14 +50,14 @@ import sys
 import time
 from pathlib import Path
 
-from edu_host import protocol
-from edu_host import EduSession, EduClientError, EduStatusError, EduTimeoutError
-from edu_host import WifiSecurity
-from edu_host.capture import CaptureError, CaptureState, CaptureTimeoutError
-from edu_host.ota_client import OTAError
-from edu_host.protocol import (AudioRecordRequestEvent, ButtonEvent, ButtonId, KeyAction, CompletedImage, DeviceInfo, EduEvent, LedColor,
+from looktech_glasses_sdk import protocol
+from looktech_glasses_sdk import GlassesSession, GlassesClientError, GlassesStatusError, GlassesTimeoutError
+from looktech_glasses_sdk import WifiSecurity
+from looktech_glasses_sdk.capture import CaptureError, CaptureState, CaptureTimeoutError
+from looktech_glasses_sdk.ota_client import OTAError
+from looktech_glasses_sdk.protocol import (AudioRecordRequestEvent, ButtonEvent, ButtonId, KeyAction, CompletedImage, DeviceInfo, GlassesEvent, LedColor,
                                LedId, LedMode, LedSpeed, SensorData, Status, Tone)
-from edu_host.transport import list_serial_ports
+from looktech_glasses_sdk.transport import list_serial_ports
 
 HELP_TEXT = """\
 Commands:
@@ -105,14 +105,14 @@ def split_command(line: str):
             for t in tokens]
 
 
-def print_event(event: EduEvent) -> None:
+def print_event(event: GlassesEvent) -> None:
     print("\r[event] %s" % event)
 
 
 class CaptureButtons:
     """Queue demo commands; the firmware retains capture and LED ownership."""
 
-    def __init__(self, session: EduSession) -> None:
+    def __init__(self, session: GlassesSession) -> None:
         self.session = session
         self.native = session.supports('NATIVE_INPUT')
         self.enabled = not self.native and all(session.supports(name) for name in
@@ -127,7 +127,7 @@ class CaptureButtons:
         self._pairing_until = 0.0
         self._next_status = 0.0
 
-    def on_event(self, event: EduEvent) -> None:
+    def on_event(self, event: GlassesEvent) -> None:
         if self.native and isinstance(event, AudioRecordRequestEvent):
             if not event.start or (not self.busy and event.received_at >= self._audio_ready_at):
                 self._audio_request = (event.start, event.received_at)
@@ -187,7 +187,7 @@ class CaptureButtons:
                     print('[buttons] recording -> %s' % self.session.record_start(filename))
                 elif not start and self.session.is_recording:
                     print('[buttons] recording stopped: %s' % self.session.record_stop())
-            except (EduClientError, ValueError, OSError) as exc:
+            except (GlassesClientError, ValueError, OSError) as exc:
                 print('[buttons] audio request failed: %s' % exc)
             finally:
                 self.finish_command()
@@ -196,7 +196,7 @@ class CaptureButtons:
         self._next_status = time.monotonic() + 1.0
         try:
             result = self.session.video_status(self.video_operation)
-        except (EduClientError, ValueError, OSError) as exc:
+        except (GlassesClientError, ValueError, OSError) as exc:
             print('[buttons] video status unavailable: %s' % exc)
             return
         self.observe(result)
@@ -327,7 +327,7 @@ def wifi_credentials(filename: str):
     return data['ssid'], data.get('password', ''), security
 
 
-def media_command(session: EduSession, args, context):
+def media_command(session: GlassesSession, args, context):
     action = args[1] if len(args) > 1 else ''
     if action == 'caps':
         print(session.media_capabilities())
@@ -367,7 +367,7 @@ def media_command(session: EduSession, args, context):
     return context
 
 
-def run_session(session: EduSession, ota_chunk_size: int = 512,
+def run_session(session: GlassesSession, ota_chunk_size: int = 512,
                 ota_packet_interval_ms: float = 10.0) -> int:
     """One REPL for every transport; only stdin is read on a worker thread."""
     import queue
@@ -377,7 +377,7 @@ def run_session(session: EduSession, ota_chunk_size: int = 512,
     session.add_image_listener(print_image)
     try:
         session.connect()
-    except EduTimeoutError as exc:
+    except GlassesTimeoutError as exc:
         print("handshake failed: %s" % exc)
         print("hint: is this really the CTRL channel/port?")
         return 1
@@ -406,8 +406,8 @@ def run_session(session: EduSession, ota_chunk_size: int = 512,
         finally:
             lines.put(None)
 
-    threading.Thread(target=read_stdin, name="edu-cli-stdin", daemon=True).start()
-    print("edu> ", end="", flush=True)
+    threading.Thread(target=read_stdin, name="looktech-cli-stdin", daemon=True).start()
+    print("glasses> ", end="", flush=True)
     try:
         while True:
             session.poll(0.05)
@@ -467,7 +467,7 @@ def run_session(session: EduSession, ota_chunk_size: int = 512,
                     try:
                         rsp = session.trigger_photo(filename)
                         show_photo_rsp(rsp.status, rsp.data)
-                    except EduStatusError as exc:
+                    except GlassesStatusError as exc:
                         show_photo_rsp(exc.status, exc.data)
                 elif cmd == "record" and len(args) >= 2 and args[1] == "start":
                     filename = Path(args[2]).resolve() if len(args) > 2 else "record.wav"
@@ -526,16 +526,16 @@ def run_session(session: EduSession, ota_chunk_size: int = 512,
             except CaptureError as exc:
                 buttons.observe(exc.result)
                 print('error: %s' % exc)
-            except EduTimeoutError as exc:
+            except GlassesTimeoutError as exc:
                 print("timeout: %s" % exc)
             except OTAError as exc:
                 print("ota error: %s" % exc)
-            except (EduClientError, ValueError, OSError) as exc:
+            except (GlassesClientError, ValueError, OSError) as exc:
                 print("error: %s" % exc)
             finally:
                 buttons.finish_command()
                 buttons.starting_video = False
-            print("edu> ", end="", flush=True)
+            print("glasses> ", end="", flush=True)
     except KeyboardInterrupt:
         print()
     except OSError as exc:
@@ -549,14 +549,14 @@ def run_session(session: EduSession, ota_chunk_size: int = 512,
 def run_threaded_session(ctrl_t, audio_t, img_t, ota_t, out_dir: str,
                          ota_chunk_size: int = 512,
                          ota_packet_interval_ms: float = 10.0) -> int:
-    return run_session(EduSession.from_transports(ctrl_t, audio_t, img_t, ota_t,
+    return run_session(GlassesSession.from_transports(ctrl_t, audio_t, img_t, ota_t,
                                                  out_dir=out_dir),
                        ota_chunk_size, ota_packet_interval_ms)
 
 
 def run_mac_session(bt_addr: str, out_dir: str, ota_chunk_size: int = 512,
                     ota_packet_interval_ms: float = 10.0) -> int:
-    return run_session(EduSession(bt=bt_addr, out_dir=out_dir),
+    return run_session(GlassesSession(bt=bt_addr, out_dir=out_dir),
                        ota_chunk_size, ota_packet_interval_ms)
 
 
@@ -566,7 +566,7 @@ def run_mac_session(bt_addr: str, out_dir: str, ota_chunk_size: int = 512,
 
 def main() -> int:
     parser = argparse.ArgumentParser(
-        description="Looktech education-firmware host demo",
+        description="Looktech Glasses demo",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument("--bt", metavar="ADDR",
                         help="connect via Bluetooth RFCOMM to this device "
@@ -616,7 +616,7 @@ def main() -> int:
         parser.error("connect with --bt <addr> (recommended) or "
                      "--ctrl-port <port> (serial fallback); "
                      "--list shows serial candidates")
-    session = EduSession(bt=args.bt,
+    session = GlassesSession(bt=args.bt,
                          ctrl_port=None if args.bt else args.ctrl_port,
                          audio_port=args.audio_port, img_port=args.img_port,
                          ota_port=args.ota_port, ctrl_channel=args.ctrl_channel,

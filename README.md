@@ -1,30 +1,32 @@
-# Looktech EDU 眼镜 Demo
+# Looktech Glasses Demo
 
-基于独立 Python SDK `edu-glasses-host`
-调用眼镜能力。包含CLI、五本教学Notebook与耳机示例；通过pip安装SDK依赖，仓库内不复制`edu_host`实现。
+基于独立 Python SDK `looktech-glasses-sdk`，通过 CLI、交互式 Notebook 和可运行示例
+体验眼镜能力，并作为二次开发参考。SDK 由 pip 安装，仓库内不复制 `looktech_glasses_sdk` 实现。
 
-首次接入请从[Python SDK 开发者指南](docs/SDK_GUIDE.md)开始：产品介绍、EDU 固件准备、
+首次接入请从[Python SDK 开发者指南](docs/SDK_GUIDE.md)开始：产品介绍、开发者固件准备、
 OTA 升级准备、帮助中心、Python 安装，以及拍摄、录音和 WiFi 导出的完整接入示例。
-开发前请联系我们，由我们通过 OTA 协助将公版固件升级为 EDU 固件；App 内没有 EDU 升级入口。
+开发前请联系我们，由我们通过 OTA 协助将公版固件升级为开发者固件；App 内没有开发者固件升级入口。
 
 ## 安装与运行
 
-demo 0.3.0 使用已发布的 [SDK 0.5.0](https://pypi.org/project/edu-glasses-host/0.5.0/)，安装时自动拉取对应平台的二进制 wheel。
+> 当前为更名候选版本；新 PyPI 包发布前，请先构建并安装 SDK wheel，再从本仓库安装 Demo。下列 PyPI 命令在新版本发布后使用。
+
+demo 0.4.0 使用更名后的 [SDK 0.6.0](https://pypi.org/project/looktech-glasses-sdk/0.6.0/)，安装时自动拉取对应平台的二进制 wheel。
 支持的 Python/平台见[开发者指南](docs/SDK_GUIDE.md#5-准备-python-环境并安装)。
 
-Python 3.9+、Git。先在系统蓝牙设置配对烧录EDU固件的`EDU-Glasses-xxxx`眼镜。
+Python 3.9+、Git。先在系统蓝牙设置配对烧录开发者固件的`EDU-Glasses-xxxx`眼镜。
 
 ```bash
-git clone https://github.com/Entertech/edu-glasses-demo.git
-cd edu-glasses-demo
+git clone https://github.com/Entertech/looktech-glasses-demo.git
+cd looktech-glasses-demo
 python -m venv .venv
 # macOS/Linux：source .venv/bin/activate
 # Windows PowerShell：.\.venv\Scripts\Activate.ps1
 python -m pip install -e .
-edu-glasses --bt auto
+looktech-glasses --bt auto
 ```
 
-安装会从 PyPI 拉取固定版本 0.5.0 的二进制 SDK 及 CLI 依赖；macOS自动安装IOBluetooth绑定，
+安装会从 PyPI 拉取固定版本 0.6.0 的二进制 SDK 及 CLI 依赖；macOS自动安装IOBluetooth绑定，
 Windows/Linux蓝牙使用标准库socket。WAV解码另需系统libopus，否则保留`.opusraw`。
 首次运行macOS需要授予终端或Python宿主蓝牙权限。
 源码方式也可运行`python demo_cli.py --bt auto`，多台眼镜时用明确地址替换`auto`。
@@ -60,10 +62,10 @@ CLI保留原始事件显示，并关闭旧拍摄映射以免重复触发；旧�
 按键停止时完成文件。CLI忙碌区间内的开始请求会被忽略，即使命令失败后才投递；接收后超过5秒也不延迟开麦。需要音频通道及解码依赖。
 旋钮音量、媒体/通话键沿用固件行为。原始事件仍可自定义观察；AI/翻译完整服务本次未提供。
 请先安装新版SDK/demo再更新固件，旧demo可能重复拍摄。实际验收范围见[开发者指南](docs/SDK_GUIDE.md#16-兼容性与已知限制)。
-录音、教学小图、LED、提示音、OTA、串口后备与管道调用，见[CLI完整使用说明](docs/CLI_GUIDE.md)。
+录音、SPP JPEG 小图、LED、提示音、OTA、串口后备与管道调用，见[CLI完整使用说明](docs/CLI_GUIDE.md)。
 `help`列出当前命令。自己的应用直接调用SDK，不解析CLI打印文本。
 
-## 教学Notebook与耳机示例
+## 交互式 Notebook 与耳机示例
 
 ```bash
 python -m pip install -e '.[notebooks]'
@@ -79,7 +81,7 @@ jupyter lab
 | [04_knob_events.ipynb](examples/notebooks/04_knob_events.ipynb) | 旋钮事件交互 |
 | [05_wifi_media_export.ipynb](examples/notebooks/05_wifi_media_export.ipynb) | 存储拍摄与WiFi原件导出 |
 
-`edu_notebook.py`是教学薄包装，复用SDK。Notebook按顺序执行，退出时调用`close()`。
+`glasses_notebook.py`是示例辅助封装，复用SDK。Notebook按顺序执行，退出时调用`close()`。
 耳机示例走系统A2DP/HFP音频设备：
 
 ```bash
@@ -92,7 +94,7 @@ python examples/headset_demo.py list
 - 外部应用接入：[Python SDK 开发者指南](docs/SDK_GUIDE.md)。
 - 接口参数和返回类型：[SDK 接口参考](docs/API_REFERENCE.md)。
 - SDK 二进制包从 PyPI 安装，使用者不需要实现仓库权限。
-- SDK/demo拆分来源：`Entertech/edu-glasses-host@82f6493fc59703ccffbc0c1d005712aaaac18ade`。
+- SDK/demo拆分来源：`Entertech/looktech-glasses-sdk@82f6493fc59703ccffbc0c1d005712aaaac18ade`。
   CLI调用及按键行为保持原样，原有3项CLI检查随代码迁入本仓库。
 - 更新SDK时修改`pyproject.toml`中的固定版本，并验证安装、既有CLI检查及所影响能力。
 

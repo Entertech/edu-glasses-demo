@@ -1,4 +1,4 @@
-"""教学 Notebook 的薄包装：直接复用 edu_host.EduSession，不解析 CLI 输出。
+"""交互式 Notebook 的薄包装：直接复用 looktech_glasses_sdk.GlassesSession，不解析 CLI 输出。
 
 请先在demo仓库根目录运行 ``python -m pip install -e ".[notebooks]"``。macOS 的单元格须在
 内核主线程执行；等待设备时使用 s.wait()/s.events()，让 IOBluetooth 继续收包。
@@ -8,15 +8,15 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Union
 
-from edu_host import (EduSession as _EduSession, EduClientError, KnobEvent,
+from looktech_glasses_sdk import (GlassesSession as _GlassesSession, GlassesClientError, KnobEvent,
                       ButtonEvent, AudioStateEvent, ImgStateEvent,
                       LedId, LedMode, LedColor, LedSpeed)
 
-EduSessionError = EduClientError
+GlassesSessionError = GlassesClientError
 
 
-class EduSession(_EduSession):
-    """保留教学用的自动连接、传感器字典与旋钮辅助方法。"""
+class GlassesSession(_GlassesSession):
+    """保留示例使用的自动连接、传感器字典与旋钮辅助方法。"""
 
     def __init__(self, bt: str = "auto", connect_timeout: float = 40.0,
                  out_dir: Union[str, Path] = "captures") -> None:

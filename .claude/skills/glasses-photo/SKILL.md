@@ -1,6 +1,6 @@
 ---
 name: glasses-photo
-description: Take a photo with the EDU glasses and save/verify the returned JPEG. Use when the user asks to capture a photo from the glasses, or when photos are not arriving / are corrupted. 用眼镜拍照、照片收不到或打不开时使用。
+description: Take a photo with the Looktech Glasses and save/verify the returned JPEG. Use when the user asks to capture a photo from the glasses, or when photos are not arriving / are corrupted. 用眼镜拍照、照片收不到或打不开时使用。
 ---
 
 # 拍照并验证 JPEG

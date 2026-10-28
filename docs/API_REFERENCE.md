@@ -1,18 +1,20 @@
 # Python SDK 接口参考
 
-对应 SDK 0.5.0。安装与产品准备见[开发者指南](SDK_GUIDE.md)，CLI 见[CLI 使用说明](CLI_GUIDE.md)。
+> 本文使用全量更名后的 SDK 0.6.0 / Demo 0.4.0；新 PyPI 项目发布前安装本地 SDK wheel。历史实机记录不等于本次更名已完成实机复验。
+
+对应 SDK 0.6.0。安装与产品准备见[开发者指南](SDK_GUIDE.md)，CLI 见[CLI 使用说明](CLI_GUIDE.md)。
 本页维护公共 API、返回类型、事件和错误契约。已安装 wheel 同时提供 `.pyi` 与 `py.typed`，供 IDE 提示。
-SDK 实现由独立仓库维护；接入项目直接导入 `edu_host`，无需实现仓库权限。
+SDK 实现由独立仓库维护；接入项目直接导入 `looktech_glasses_sdk`，无需实现仓库权限。
 
 ## 连接与能力发现
 
-`EduSession(...)` 只构造对象，`with` 自动连接并在退出时关闭。需要较长连接等待时，
+`GlassesSession(...)` 只构造对象，`with` 自动连接并在退出时关闭。需要较长连接等待时，
 可显式管理：
 
 ```python
-from edu_host import EduSession
+from looktech_glasses_sdk import GlassesSession
 
-glasses = EduSession(bt="auto", out_dir="captures")
+glasses = GlassesSession(bt="auto", out_dir="captures")
 try:
     glasses.connect(timeout=40)
     print(glasses.hello_ack.proto_ver, glasses.capabilities)
@@ -45,7 +47,7 @@ finally:
 | `MEDIA_CATALOG` + `WIFI` | `media_import()`；真实媒体能力由 ISP 查询确认 |
 
 OTA 通过独立服务发现，没有专门的 HELLO OTA 能力位。能力或必要通道缺失时 SDK
-抛出 `EduUnsupportedError`，不要通过固件版本显示字符串推断所有能力。
+抛出 `GlassesUnsupportedError`，不要通过固件版本显示字符串推断所有能力。
 
 ### 平台、线程与持续收包
 
@@ -54,21 +56,21 @@ OTA 通过独立服务发现，没有专门的 HELLO OTA 能力位。能力或�
   macOS 通过 SDP 查询。通常不需要修改通道参数。
 - 一个会话内顺序调用 SDK。空闲、录音或等事件时使用 `glasses.wait(seconds)` 或
   `glasses.poll(0.05)`，避免用 `time.sleep()` 或阻塞式 `input()` 长时间停住收包。
-- `EduSession` 的事件/图片回调在调用者线程分发。回调只做记录或排队，不在回调中
+- `GlassesSession` 的事件/图片回调在调用者线程分发。回调只做记录或排队，不在回调中
   发设备请求；GUI/其他线程将请求排队，由 SDK 所在线程执行。
 - SDK 已处理长 HTTP 下载期间的蓝牙轮询，应用不需要自行将媒体下载移到另一个
   SDK 调用线程。
 
 虚拟串口后备可用
-`EduSession(ctrl_port="COM5", audio_port="COM6", img_port="COM7", ota_port="COM8")`。
+`GlassesSession(ctrl_port="COM5", audio_port="COM6", img_port="COM7", ota_port="COM8")`。
 这些应是各 SPP 服务对应的蓝牙虚拟串口，不是整机烧录/日志 USB 串口。
 
 ## 信息与传感器
 
 ```python
-from edu_host import EduSession
+from looktech_glasses_sdk import GlassesSession
 
-with EduSession(bt="auto") as glasses:
+with GlassesSession(bt="auto") as glasses:
     info = glasses.info()
     print(info.fw_version_str, info.battery_level, info.charging)
     if glasses.supports("SENSORS"):
@@ -86,20 +88,20 @@ with EduSession(bt="auto") as glasses:
 
 | 目的 | 调用 | 传输/保存位置 | 返回成功的含义 |
 |---|---|---|---|
-| 教学图片分析、小图回传 | `photo()` | JPEG 经 IMG SPP 传到 PC | 完整 JPEG 已写入 PC 文件 |
+| SPP 图片分析、小图回传 | `photo()` | JPEG 经 IMG SPP 传到 PC | 完整 JPEG 已写入 PC 文件 |
 | 保存原片 | `capture_saved_photo()` | 原片保存在眼镜，随后 WiFi 导出 | 公版拍照控制状态 DONE |
 | 录制视频 | `video_start()` / `video_stop()` | MP4 保存在眼镜，随后 WiFi 导出 | 公版 RECORDING / DONE 控制状态 |
 
 `photo()` 不等于保存原片；麦克风 `record()` 也不等于录像。拍摄灯效由固件公共
 能力管理，不需要额外调用 `set_led()` 模拟。
 
-### 教学 JPEG 回传
+### SPP JPEG 小图 回传
 
 ```python
-from edu_host import EduSession
+from looktech_glasses_sdk import GlassesSession
 
-with EduSession(bt="auto", out_dir="captures") as glasses:
-    path = glasses.photo("lesson.jpg", timeout=30)
+with GlassesSession(bt="auto", out_dir="captures") as glasses:
+    path = glasses.photo("photo.jpg", timeout=30)
     print("已落盘：", path)
 ```
 
@@ -111,12 +113,12 @@ with EduSession(bt="auto", out_dir="captures") as glasses:
 ### 保存原片与录像
 
 ```python
-from edu_host import EduSession, EduUnsupportedError
+from looktech_glasses_sdk import GlassesSession, GlassesUnsupportedError
 
-with EduSession(bt="auto") as glasses:
+with GlassesSession(bt="auto") as glasses:
     required = ("SAVED_PHOTO", "VIDEO", "MEDIA_CATALOG")
     if not all(glasses.supports(name) for name in required):
-        raise EduUnsupportedError("当前固件不支持存储拍照/录像")
+        raise GlassesUnsupportedError("当前固件不支持存储拍照/录像")
     print("实际媒体能力：", glasses.media_capabilities())
     photo = glasses.capture_saved_photo(timeout=45)
     print("照片控制结果：", photo.operation_id, photo.state.name)
@@ -141,7 +143,7 @@ UNKNOWN/超时不代表没有拍摄，SDK 不自动重拍；状态处理见[错�
 
 ### 录像配置
 
-需要声明 `VIDEO_CONFIG` 的新EDU固件。分辨率是公版档位 `2k` / `1080p`，方向为
+需要声明 `VIDEO_CONFIG` 的新开发者固件。分辨率是公版档位 `2k` / `1080p`，方向为
 `landscape` / `portrait`，最长时长为公版App的30 / 60 / 180秒，不接受任意宽高或秒数。
 配置保存在设备上，重启保留，下次录像使用；它不是某一次调用的临时参数。
 档位名称沿用公版，不能据此假设16:9画幅；本轮semi导出的原片尺寸如下：
@@ -152,9 +154,9 @@ UNKNOWN/超时不代表没有拍摄，SDK 不自动重拍；状态处理见[错�
 | `1080p` | 1440×1080 | 1080×1440 |
 
 ```python
-from edu_host import EduSession
+from looktech_glasses_sdk import GlassesSession
 
-with EduSession(bt="auto") as glasses:
+with GlassesSession(bt="auto") as glasses:
     print("原配置：", glasses.get_video_config())
     config = glasses.set_video_config(
         resolution="1080p", orientation="portrait", max_duration_s=60,
@@ -167,7 +169,7 @@ with EduSession(bt="auto") as glasses:
 ```
 
 也可传 `VideoResolution.RES_2K/RES_1080P` 和 `VideoOrientation.LANDSCAPE/PORTRAIT`
-枚举，均从 `edu_host` 导入。`get_video_config()` 返回 `VideoConfig`：
+枚举，均从 `looktech_glasses_sdk` 导入。`get_video_config()` 返回 `VideoConfig`：
 
 | 字段 | 含义 |
 |---|---|
@@ -188,14 +190,14 @@ with EduSession(bt="auto") as glasses:
 
 旧`video_start()`无需新增参数；它使用设备配置。`video_start(timeout=20)`的timeout是
 等启动状态的超时，`set_video_config(timeout=45)`是等profile生效的超时，两者均不表示
-录像最长时长。旧固件缺少bit9时新配置接口抛`EduUnsupportedError`，原拍摄接口保持可用。
+录像最长时长。旧固件缺少bit9时新配置接口抛`GlassesUnsupportedError`，原拍摄接口保持可用。
 
 ## 麦克风录音
 
 ```python
-from edu_host import EduSession
+from looktech_glasses_sdk import GlassesSession
 
-with EduSession(bt="auto", out_dir="captures") as glasses:
+with GlassesSession(bt="auto", out_dir="captures") as glasses:
     actual_path = glasses.record_start("lesson.wav")
     try:
         glasses.wait(5)
@@ -213,7 +215,7 @@ with EduSession(bt="auto", out_dir="captures") as glasses:
 
 ## 事件监听与自定义
 
-`EduSession` 只分发事件，不自动把按键绑定到拍摄。应用可以自行决定每个事件对应的
+`GlassesSession` 只分发事件，不自动把按键绑定到拍摄。应用可以自行决定每个事件对应的
 业务动作；声明 NATIVE_INPUT 时固件已执行本地拍照/录像，不应重复发命令。
 物理按键包含的本地音量/通话/配对行为同样保留。
 
@@ -222,19 +224,19 @@ with EduSession(bt="auto", out_dir="captures") as glasses:
 | `ButtonEvent` | `btn`、`action`、`btn_name`、`action_name` | AI、CAPTURE、MEDIA 键的动作 |
 | `KnobEvent` | `direction_name`、`delta_x`、`delta_y` | 旋钮/滑动输入 |
 | `AudioStateEvent` | `running`、`source_name`、`err` | 音频运行、来源和错误 |
-| `ImgStateEvent` | `capture_evt_name`、`error` | 教学图传状态，不能替代完整文件结果 |
+| `ImgStateEvent` | `capture_evt_name`、`error` | SPP 图传状态，不能替代完整文件结果 |
 
 短按会出现 PRESS、RELEASE、SHORT、SINGLE；需要单击语义时只处理 SINGLE，避免
 SHORT/SINGLE 重复触发。长按还会有 REPEAT、LONG_RELEASE。枚举 `ButtonId`、
-`KeyAction` 从 `edu_host.protocol` 导入，完整动作见维护者提供的详细协议。
+`KeyAction` 从 `looktech_glasses_sdk.protocol` 导入，完整动作见维护者提供的详细协议。
 
 下面的示例将右侧单击转换为应用请求，由回调外的主循环处理。示例只打印业务请求，
 开发者可在标记处接入自己的功能：
 
 ```python
 from queue import Empty, Queue
-from edu_host import ButtonEvent, EduSession, KnobEvent
-from edu_host.protocol import ButtonId, KeyAction
+from looktech_glasses_sdk import ButtonEvent, GlassesSession, KnobEvent
+from looktech_glasses_sdk.protocol import ButtonId, KeyAction
 
 requests = Queue()
 
@@ -246,7 +248,7 @@ def on_event(event):
         requests.put(("knob", event.direction_name, event.delta_x))
 
 try:
-    with EduSession(bt="auto") as glasses:
+    with GlassesSession(bt="auto") as glasses:
         glasses.add_event_listener(on_event)
         while glasses.is_connected:
             glasses.poll(0.05)
@@ -261,11 +263,11 @@ except KeyboardInterrupt:
 
 一次性收集可用 `glasses.events(10)`，它等待 10 秒后返回事件列表，不是流式生成器。
 图片回调为 `add_image_listener(callback)`，参数 `(path, CompletedImage)`，完整图片已落盘
-后触发。以上约束针对 `EduSession`；直接使用旧底层 `EduClient` 时线程模型不同。
+后触发。以上约束针对 `GlassesSession`；直接使用旧底层 `GlassesClient` 时线程模型不同。
 
 参考 CLI 按能力区分原生与旧固件：有 NATIVE_INPUT 时仅观察实体拍摄事件，避免重复发命令；
 旧固件仍将 SINGLE/LONG/PRESS 映射为拍摄请求，并处理去重及配对窗口。复用时参照
-[`CaptureButtons`](https://github.com/Entertech/edu-glasses-demo/blob/main/demo_cli.py)，不要把同步请求直接放进事件回调。
+[`CaptureButtons`](https://github.com/Entertech/looktech-glasses-demo/blob/main/demo_cli.py)，不要把同步请求直接放进事件回调。
 当前原生固件的实体拍照/录像不依赖 PC 在线；SDK 发起的录像仍随所属连接断开清理。
 
 ## WiFi 与媒体导出
@@ -295,7 +297,7 @@ PC 与眼镜应处于互通的局域网，PC 可用有线网络，不需要手�
 ```python
 import json
 from pathlib import Path
-from edu_host import EduSession, WifiSecurity
+from looktech_glasses_sdk import GlassesSession, WifiSecurity
 
 credentials = json.loads(Path("wifi.json").read_text(encoding="utf-8"))
 security = WifiSecurity[credentials["security"].upper()]
@@ -303,7 +305,7 @@ security = WifiSecurity[credentials["security"].upper()]
 def on_progress(media_id, filename, received, total):
     print(media_id, filename, received, "/", total)
 
-with EduSession(bt="auto") as glasses:
+with GlassesSession(bt="auto") as glasses:
     print("实际媒体能力：", glasses.media_capabilities())
     with glasses.media_import(credentials["ssid"], credentials["password"], security) as media:
         items = media.list()
@@ -327,7 +329,7 @@ HTTP/STA；停止未确认时设备可能暂时保持 BUSY。不要另外启动�
 
 单项下载使用 `media.download(item, "exports")`，也支持当前目录中的整数
 `media_id`。传入 `MediaItem` 可以检查所选描述是否变化。相对导出目录相对进程当前
-工作目录，独立于 `EduSession.out_dir`。选择集合应由业务决定，不能从操作 ID 推算媒体 ID。
+工作目录，独立于 `GlassesSession.out_dir`。选择集合应由业务决定，不能从操作 ID 推算媒体 ID。
 
 ### 结果、重试和取消
 
@@ -360,7 +362,7 @@ CTRL 失效、取消、目录/所属会话失效会抛出会话级错误并终�
 `media.delete(media_id)`。下面仅定义函数，不在导出示例中自动调用：
 
 ```python
-from edu_host import MediaImport, MediaItem
+from looktech_glasses_sdk import MediaImport, MediaItem
 
 def delete_selected(media: MediaImport, item: MediaItem):
     result = media.delete(item)
@@ -386,9 +388,9 @@ def delete_selected(media: MediaImport, item: MediaItem):
 ### LED、提示音、重启
 
 ```python
-from edu_host import EduSession, LedColor, LedId, LedMode, LedSpeed, Tone
+from looktech_glasses_sdk import GlassesSession, LedColor, LedId, LedMode, LedSpeed, Tone
 
-with EduSession(bt="auto") as glasses:
+with GlassesSession(bt="auto") as glasses:
     glasses.set_led(LedId.INNER, LedMode.BLINK, LedColor.GREEN, LedSpeed.NORMAL)
     glasses.play_tone(Tone.CLICK)
     glasses.wait(1)
@@ -407,9 +409,9 @@ with EduSession(bt="auto") as glasses:
 先停止录像/录音、等待拍照完成并退出媒体导入，再升级；升级期间不调用其他设备能力。
 
 ```python
-from edu_host import EduSession
+from looktech_glasses_sdk import GlassesSession
 
-def upgrade(glasses: EduSession, package_path):
+def upgrade(glasses: GlassesSession, package_path):
     def progress(stage, done, total):
         print(stage, done, total)
     result = glasses.ota(package_path, progress=progress)
@@ -425,29 +427,29 @@ def upgrade(glasses: EduSession, package_path):
 
 | 异常 | 可读取的信息 | 应用处理 |
 |---|---|---|
-| `EduUnsupportedError` | 缺少能力或通道 | 提示匹配固件/通道，不重复发送同一请求 |
-| `EduStatusError` | `cmd_id`、`status`、`data` | 用 `edu_host.protocol.Status` 区分 BUSY/INVALID/NOT_READY/ERROR；待条件恢复后由业务决定重试 |
+| `GlassesUnsupportedError` | 缺少能力或通道 | 提示匹配固件/通道，不重复发送同一请求 |
+| `GlassesStatusError` | `cmd_id`、`status`、`data` | 用 `looktech_glasses_sdk.protocol.Status` 区分 BUSY/INVALID/NOT_READY/ERROR；待条件恢复后由业务决定重试 |
 | `CaptureTimeoutError` | `operation_id` | 保留操作 ID 查询，不能自动重拍或重复开录像 |
 | `CaptureError` | `result`，含 UNKNOWN/FAILED | 根据真实状态处理；UNKNOWN 不等于已经停止 |
-| `EduTimeoutError` | 请求或图片等待超时 | 可能已执行；先查询或核实，不盲重发 |
+| `GlassesTimeoutError` | 请求或图片等待超时 | 可能已执行；先查询或核实，不盲重发 |
 | `WifiError` | `code` | 核实网络、安全类型及后端错误，按设备返回的真实错误码处理 |
 | `MediaError` | 单项操作问题 | 检查结果/描述；已成功文件保留 |
 | `MediaSessionError` / `MediaCancelled` | 所属会话失效或取消 | 结束上下文，明确重新建立后再操作 |
 | `AmbiguousGlassesError` | 多设备歧义 | 指定蓝牙地址 |
 | `OSError` / `ValueError` | 连接/本地文件问题、无效参数 | 检查系统状态、路径、输入 |
-| `OTAError` 及其子类 | 独立 OTA 错误 | 单独处理，不能只捕获 `EduClientError` |
+| `OTAError` 及其子类 | 独立 OTA 错误 | 单独处理，不能只捕获 `GlassesClientError` |
 
-异常均可从 `edu_host` 导入；`CaptureTimeoutError` 继承 `EduTimeoutError`，
+异常均可从 `looktech_glasses_sdk` 导入；`CaptureTimeoutError` 继承 `GlassesTimeoutError`，
 `MediaCancelled` 继承 `MediaSessionError`，后者继承 `MediaError`，这些异常最终继承
-`EduClientError`。因此先捕获具体异常，再捕获通用异常。
+`GlassesClientError`。因此先捕获具体异常，再捕获通用异常。
 多设备歧义的 `AmbiguousGlassesError` 则是独立的 `RuntimeError` 子类，需要单独捕获或明确指定设备地址。
 
 保留拍照超时的操作 ID，例如：
 
 ```python
-from edu_host import CaptureError, CaptureTimeoutError, EduClientError, EduSession
+from looktech_glasses_sdk import CaptureError, CaptureTimeoutError, GlassesClientError, GlassesSession
 
-with EduSession(bt="auto") as glasses:
+with GlassesSession(bt="auto") as glasses:
     try:
         result = glasses.capture_saved_photo()
         print(result)
@@ -456,7 +458,7 @@ with EduSession(bt="auto") as glasses:
         # 后续在同一有效 CTRL 会话查询 glasses.media_status(exc.operation_id)
     except CaptureError as exc:
         print("真实拍摄状态：", exc.result.state.name, exc.result.error)
-    except (EduClientError, OSError) as exc:
+    except (GlassesClientError, OSError) as exc:
         print("本次请求失败：", exc)
 ```
 
@@ -470,12 +472,12 @@ with EduSession(bt="auto") as glasses:
 
 | 入口 | 返回 / 作用 |
 |---|---|
-| `EduSession(bt="auto", *, out_dir="captures", ...)` | 创建会话，构造不连接；串口/通道参数见连接章节 |
+| `GlassesSession(bt="auto", *, out_dir="captures", ...)` | 创建会话，构造不连接；串口/通道参数见连接章节 |
 | `connect(timeout=6)` / `close()` | 返回当前会话 / 关闭所属资源 |
 | `is_connected` / `hello_ack` | 连接状态 / `HelloAck`，关闭后 ack 为 None |
 | `capabilities` / `supports(name_or_bits)` | 能力名称元组 / bool，需已连接 |
 | `info(timeout=5)` / `sensors(timeout=5)` | `DeviceInfo` / `SensorData` |
-| `photo(filename=None, timeout=30)` | `Path`，完整教学 JPEG 已写入 PC |
+| `photo(filename=None, timeout=30)` | `Path`，完整SPP JPEG 小图 已写入 PC |
 | `trigger_photo(filename=None, timeout=5)` / `wait_photo(timeout=30)` | 受理 `Response` / 完整图片 `Path` |
 | `capture_saved_photo(timeout=45)` | `CaptureResult`，原片保存的公版控制状态 |
 | `media_status(operation)` | `CaptureResult`，同 owner 最近操作的当前状态 |
@@ -502,20 +504,20 @@ with EduSession(bt="auto") as glasses:
 | `play_tone(tone=Tone.CLICK, timeout=5)` / `reboot(timeout=5)` | 控制 `Response` |
 | `ota(filename, progress=None, chunk_size=512, packet_interval_ms=10)` | `UpdateResultResponse` |
 
-已有自定义传输实现可用 `EduSession.from_transports(ctrl, audio=None, image=None,
+已有自定义传输实现可用 `GlassesSession.from_transports(ctrl, audio=None, image=None,
 ota=None, out_dir="captures")`；普通接入优先使用蓝牙地址或串口参数。
 
 
 ## 原生按键与状态观察（0.4.0）
 
-新版 EDU 固件默认在设备侧处理拍照键：单击存储拍照，长按录像，录像中再按停止。
+新版开发者固件默认在设备侧处理拍照键：单击存储拍照，长按录像，录像中再按停止。
 PC 断开不影响本地拍摄；SDK 发起的录像仍随所属连接断开而停止。旋钮音量、媒体及通话
 按键沿用公版。原始 `ButtonEvent`/`KnobEvent` 仍可订阅，但不要再把同一个拍摄事件自动映射成 SDK 拍摄命令。
 
 ```python
-from edu_host import EduSession, DeviceCaptureState, AudioRecordRequestEvent
+from looktech_glasses_sdk import GlassesSession, DeviceCaptureState, AudioRecordRequestEvent
 
-with EduSession(bt="auto") as glasses:
+with GlassesSession(bt="auto") as glasses:
     print("原生按键:", glasses.supports("NATIVE_INPUT"))
     if glasses.supports("DEVICE_CAPTURE_STATE"):
         state = glasses.get_capture_state()
@@ -527,14 +529,14 @@ with EduSession(bt="auto") as glasses:
 
 `get_capture_state() -> DeviceCaptureState` 和同类型事件包含 `photo`、`video` 两个
 `DeviceCaptureEntry(kind, source, state, error)`，枚举为 `CaptureKind`、`CaptureSource`、`CaptureState`。
-只读快照观察存储照片和视频，教学小图继续使用 `ImgStateEvent`。每类保留最新终态，重启后为 NONE/IDLE；
+只读快照观察存储照片和视频，SPP JPEG 小图继续使用 `ImgStateEvent`。每类保留最新终态，重启后为 NONE/IDLE；
 没有可控制的 operation，不能据此
 调用 `video_stop()` 接管本地录像，也不证明文件已发布。原件仍从真实 ID 媒体目录选择下载。
 
 录音双击按公版双击配置产生 `AudioRecordRequestEvent(start=True)`，固件此时不开麦。
 应用若支持此动作，应在回调中排队，在主循环调用 `record_start(唯一文件名)`，该方法先准备
 接收端再发送 AUDIO_START；`start=False` 时对正在录制的 SDK 会话调用 `record_stop()` 完成文件。
-流属于接收 PC，断连清理；没有接收程序不做离线录音。录音继续沿用 EDU 接收流的充电、重试和静音提示策略。
+流属于接收 PC，断连清理；没有接收程序不做离线录音。录音继续沿用 SDK 接收流的充电、重试和静音提示策略。
 事件的 `received_at` 是接收帧时的本机单调秒数，应用应拒绝忙碌期间或已过期的开始意图。
 官方 demo 已实现该接收流程；
 SDK 本身不会因为订阅事件自动录音。AI/翻译完整业务仍需应用自行实现。

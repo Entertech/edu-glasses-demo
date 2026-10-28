@@ -3,7 +3,7 @@
 import argparse
 import json
 from pathlib import Path
-from edu_host import AmbiguousGlassesError, EduClientError, EduSession, WifiSecurity
+from looktech_glasses_sdk import AmbiguousGlassesError, GlassesClientError, GlassesSession, WifiSecurity
 
 
 def main():
@@ -28,7 +28,7 @@ def main():
             security = WifiSecurity[security.upper()]
         except KeyError:
             raise ValueError('Unknown WiFi security') from None
-        with EduSession(bt=args.bt) as glasses:
+        with GlassesSession(bt=args.bt) as glasses:
             print('Media capabilities:', glasses.media_capabilities())
             with glasses.media_import(ssid, password, security) as media:
                 items = {item.media_id: item for item in media.list()}
@@ -45,7 +45,7 @@ def main():
                     print('Errors:', result.errors)
                     complete = complete and result.main_success and result.complete
                 return 0 if complete else 1
-    except (AmbiguousGlassesError, EduClientError, OSError, ValueError) as error:
+    except (AmbiguousGlassesError, GlassesClientError, OSError, ValueError) as error:
         print('Failed:', error)
         return 1
 

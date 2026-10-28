@@ -1,27 +1,34 @@
-> CLI与教学示例已迁移到`Entertech/edu-glasses-demo`。安装入口见[Demo README](../README.md)，
+> CLI与开发示例已迁移到`Entertech/looktech-glasses-demo`。安装入口见[Demo README](../README.md)，
 > 公开SDK接口见`docs/API_REFERENCE.md`，实现与固件记录由内部维护。下文保留原有CLI操作、连接排障和历史验收说明。
 
-# Looktech EDU CLI完整使用说明
+# Looktech Glasses CLI完整使用说明
 
-Looktech 眼镜**教育版固件**的上位机演示程序，通过四条经典蓝牙 SPP 服务与眼镜通信。
+Looktech 眼镜**开发者固件**的上位机演示程序，通过四条经典蓝牙 SPP 服务与眼镜通信。
 
-开发者接入请先阅读 **[Python SDK 开发者指南](SDK_GUIDE.md)**：产品与 EDU 固件准备、安装与连接、能力发现、
+开发者接入请先阅读 **[Python SDK 开发者指南](SDK_GUIDE.md)**：产品与开发者固件准备、安装与连接、能力发现、
 拍摄/录音、事件自定义、WiFi 媒体导出、错误处理及 API 索引。详细参数见
 [公开 API 参考](API_REFERENCE.md)；本文保留 CLI 快速体验和历史兼容记录。
 
-## EDU 集成版本
+## 开发者接入版本
 
-SDK 0.5.0 已提供 [PyPI 二进制发行包](https://pypi.org/project/edu-glasses-host/0.5.0/)；平台要求见[开发者指南](SDK_GUIDE.md#5-准备-python-环境并安装)。
+SDK 0.6.0 发布后提供 [PyPI 二进制发行包](https://pypi.org/project/looktech-glasses-sdk/0.6.0/)；平台要求见[开发者指南](SDK_GUIDE.md#5-准备-python-环境并安装)。
 
-当前接入版本为独立 demo **0.3.0**、SDK **0.5.0**，配套固件为
+当前接入版本为独立 demo **0.4.0**、SDK **0.6.0**，配套固件为
 Looktech-Glasses-Device / feat/edu-main-integration（内部维护资料）。
 下列迁入、构建与旧产物说明保留历史背景；当前能力及验收范围以开发者指南为准。
+当前采用开发者固件，通过经典蓝牙 SPP 接入 PC；设备实际仍广播 `EDU-*`，服务名沿用下表。
+公版 App 的 BLE/绑定/鉴权入口不属于这条 SDK 接入路径。能力按 HELLO 和实际 ISP 查询结果开放，
+不能把软件更名理解为所有公版设备已支持开发接口。首次固件切换请联系维护者通过 OTA 协助完成。
+
+<details>
+<summary>历史固件集成与构建背景（原始记录）</summary>
+
 固件从 main `813ee9999eaefcdb830053d2faec65f0e2bff2c5` 迁入旧 `feat/edu-spp`
 的 EDU v1 能力，保留教学功能、重启、LED、提示音和 OTA；截至 2026-10-21，
 当前功能固件源提交为 `9b1439a3`，SDK 当前分支支持存储拍照、录像配置及
 WiFi 原件导出。尚未合入两仓库 main，也未发布正式 SDK/固件。
 
-SDK 新增统一 `EduSession`，CLI 和 Notebook 直接复用它；保留原有客户端与 transport API。
+SDK 新增统一 `GlassesSession`，CLI 和 Notebook 直接复用它；保留原有客户端与 transport API。
 Mac 每条原生通道使用独立进程主 run loop，避免关闭 IMG/AUDIO/OTA 时误断 CTRL；
 本地 OTA 包先校验再开通道。固件复用 main 图片 route/reservation/ACK 与录音资源管理，
 并在 EDU 门控内修复 5 秒旧清理回调取消新拍照预留的问题。
@@ -42,6 +49,9 @@ HELLO/caps 用于版本与功能发现，不提供业务鉴权或学生/维护�
 基线，不包含本轮存储拍摄和 LAN 导出扩展；新功能需固件维护者提供匹配当前分支的产物。
 WPK 用于 WQ 烧录工具；SDK/CLI 的
 `ota` 命令必须使用 Looktech 外层 `.bin`，不能直接使用 WPK 或 `wqota` BT 模块内包。
+
+
+</details>
 
 | 服务      | SPP UUID | RFCOMM 通道 | 用途                                   |
 |-----------|----------|-------------|----------------------------------------|
@@ -71,7 +81,7 @@ python3 demo_cli.py --bt auto                  # 全平台：自动找已配对�
 
 下面的"虚拟串口"方式仅作为后备（主要用于 Windows COM 口习惯用户）。
 
-演示的功能：设备信息、传感器查询（光敏 / 温度）、教学小图回传、麦克风录音存
+演示的功能：设备信息、传感器查询（光敏 / 温度）、SPP JPEG 小图回传、麦克风录音存
 WAV、按键 / 旋钮 / 状态事件、存储拍照、录像、WiFi 原件导出及显式删除、OTA 固件升级。
 
 > **耳机功能**（音乐播放和通话，A2DP/HFP）走操作系统的标准蓝牙音频设备，
@@ -81,27 +91,27 @@ WAV、按键 / 旋钮 / 状态事件、存储拍照、录像、WiFi 原件导出
 `opuslib` + 本机 libopus（录音输出 WAV 用）。
 
 ```bash
-git clone https://github.com/Entertech/edu-glasses-demo.git
-cd edu-glasses-demo
+git clone https://github.com/Entertech/looktech-glasses-demo.git
+cd looktech-glasses-demo
 python3 -m pip install -r requirements.txt
 python3 -m pip install -e .
 ```
 
 ## Python SDK
 
-`edu_host.EduSession` 是普通 Python 程序、CLI 和 Notebook 共用的会话入口。
+`looktech_glasses_sdk.GlassesSession` 是普通 Python 程序、CLI 和 Notebook 共用的会话入口。
 独立 SDK 的基础安装无必选运行依赖；Windows/Linux 蓝牙直连使用支持蓝牙 socket 的 Python 环境。demo 可安装
-`python3 -m pip install -e .`，CLI默认安装串口、macOS和OPUS所需Python依赖；WAV解码还需系统libopus。安装后也可运行 `edu-glasses --bt auto`。
+`python3 -m pip install -e .`，CLI默认安装串口、macOS和OPUS所需Python依赖；WAV解码还需系统libopus。安装后也可运行 `looktech-glasses --bt auto`。
 
 ```python
-from edu_host import EduSession, KnobEvent, LedId, LedMode, LedColor, Tone
+from looktech_glasses_sdk import GlassesSession, KnobEvent, LedId, LedMode, LedColor, Tone
 
-with EduSession(bt="auto", out_dir="captures") as glasses:
+with GlassesSession(bt="auto", out_dir="captures") as glasses:
     print(glasses.capabilities)             # HELLO_ACK 中的固件能力
     print(glasses.info().fw_version_str)
     reading = glasses.sensors()
     print(reading.als_raw, reading.battery_temp_c, reading.btcore_temp_c)
-    jpeg = glasses.photo("lesson.jpg", timeout=30)  # 完整 JPEG 已落盘才返回
+    jpeg = glasses.photo("photo.jpg", timeout=30)  # 完整 JPEG 已落盘才返回
     audio = glasses.record("lesson.wav", seconds=5)
     print(jpeg, audio)                       # 缺解码器时 audio 为 .opusraw
     for event in glasses.events(10):         # 返回类型化事件，无需解析打印文本
@@ -114,7 +124,7 @@ with EduSession(bt="auto", out_dir="captures") as glasses:
 
 构造函数不连接；`with` 会自动 `connect()`/`close()`，也可显式调用这两个方法。
 `bt` 支持 `"auto"` 和显式蓝牙地址。串口后备示例：
-`EduSession(ctrl_port="COM5", audio_port="COM6", img_port="COM7", ota_port="COM8")`。
+`GlassesSession(ctrl_port="COM5", audio_port="COM6", img_port="COM7", ota_port="COM8")`。
 Windows/Linux 通道可通过 `ctrl_channel`、`audio_channel`、`img_channel`、
 `ota_channel` 覆盖（默认 6/5/4/7）；macOS 通过 SDP 查询。
 
@@ -142,16 +152,16 @@ Mac 在握手前打开 CTRL/AUDIO/IMG，录音结束保留音频连接、会话�
 Windows/Linux socket 与串口继续使用接收线程和原连接顺序。SDK 方法按顺序调用；监听回调在
 调用者线程分发，回调应简短，且不要在回调内重入设备请求。
 
-异常可从 `edu_host` 导入：`EduUnsupportedError` 表示旧固件缺能力位或缺通道；
-`EduTimeoutError` 表示响应或图片等待超时；`EduStatusError` 保留设备返回的
-`cmd_id/status/data`（BUSY、INVALID 等）；它们都继承 `EduClientError`。
+异常可从 `looktech_glasses_sdk` 导入：`GlassesUnsupportedError` 表示旧固件缺能力位或缺通道；
+`GlassesTimeoutError` 表示响应或图片等待超时；`GlassesStatusError` 保留设备返回的
+`cmd_id/status/data`（BUSY、INVALID 等）；它们都继承 `GlassesClientError`。
 连接失败也可能抛 `OSError` 或 `AmbiguousGlassesError`（多台设备需指定地址）；
 参数错误抛 `ValueError`。OTA 保留独立的 `OTAError`、
 `OTAStatusError`、`OTATimeoutError`。超时不表示设备未执行命令，SDK 不自动重发拍照等操作。
 OTA 前须结束录音并等待拍照完成；升级期间拒绝其他设备请求。
 本地升级包在建立 OTA 通道前先校验，坏包不会打断当前控制会话。底层
 `MacRFCOMMChannel.close()/open()` 可独立关闭、重开目标通道；重复关闭安全。
-应用退出时使用 `EduSession.close()` 释放完整会话，SDK 会等待并回收各通道进程。
+应用退出时使用 `GlassesSession.close()` 释放完整会话，SDK 会等待并回收各通道进程。
 只有尚无同设备通道打开时，首次打开失败才重建 ACL 重试，避免打断已有连接。
 此实现需要可启动子进程的普通 Python 环境；单文件冻结的可执行程序尚未验证。
 
@@ -167,9 +177,9 @@ OTA 前须结束录音并等待拍照完成；升级期间拒绝其他设备请�
 
 ## 存储照片、录像与 WiFi 原件导出
 
-这组接口需要支持 MEDIA_CATALOG 的 EDU BT，复用公版 ISP 的 ID/元数据及 LAN 能力，
+这组接口需要支持 MEDIA_CATALOG 的开发者 BT，复用公版 ISP 的 ID/元数据及 LAN 能力，
 无需修改或烧录 ISP。`media_capabilities()` 查询真实能力；只导出有真实 ID 的照片、视频
-及可确认登记的伴随文件。原 `photo()`/`record()` 仍为教学小图/麦克风音频。
+及可确认登记的伴随文件。原 `photo()`/`record()` 仍为SPP JPEG 小图/麦克风音频。
 
 拍摄调用返回公版控制状态，不承诺本次唯一媒体 ID 或文件已发布。随后从媒体列表选择
 真实条目；暂未列出时可重新查询，SDK 不猜最近文件、不自动重拍。
@@ -177,11 +187,11 @@ OTA 前须结束录音并等待拍照完成；升级期间拒绝其他设备请�
 ```python
 import json
 from pathlib import Path
-from edu_host import EduSession, WifiSecurity
+from looktech_glasses_sdk import GlassesSession, WifiSecurity
 
 # 本地凭据文件由使用者提供；不要提交到仓库。
 credentials = json.loads(Path('wifi.json').read_text(encoding='utf-8'))
-with EduSession(bt='auto') as glasses:
+with GlassesSession(bt='auto') as glasses:
     photo = glasses.capture_saved_photo()  # 公版 DONE 控制状态，不是媒体身份
     print(photo.operation_id, photo.state)
     glasses.video_start()                 # 等待公版 RECORDING 状态
@@ -241,7 +251,7 @@ CLI 忙碌区间内收到的开始意图即使在命令失败后才投递也丢�
 `ButtonEvent`/`KnobEvent` 格式兼容，开发者仍可自定义观察；同一拍摄键不要重复发拍摄命令。
 AI/翻译完整 PC 服务本次不提供。原生按键时序、灯效、音频文件尚待实机验收，本轮不烧录。
 
-照片/视频保存在眼镜，之后用 `media open/list/download` 导出。原有 `photo [out.jpg]` 仍是教学小图。
+照片/视频保存在眼镜，之后用 `media open/list/download` 导出。原有 `photo [out.jpg]` 仍是SPP JPEG 小图。
 
 ## 兼容范围与实机回归（2026-10-16）
 
@@ -445,11 +455,11 @@ printf 'record start out.wav\nwait 10\nrecord stop\nquit\n' | python3 demo_cli.p
 按任务拆好的 skills（连接排障 / 拍照 / 录音 / 传感器 / 事件监听 / OTA 升级 /
 设备控制 / 协议开发），Claude Code 打开本仓库即自动可用。
 
-### 教学示例（examples/）
+### 开发示例（examples/）
 
 - `examples/headset_demo.py` —— 把眼镜当蓝牙音频设备：A2DP 放音 / HFP 录音 /
   实时回环（`python3 examples/headset_demo.py list|play|record|loopback`）。
-- `examples/notebooks/` —— 五本 Jupyter 教学笔记本（依赖
+- `examples/notebooks/` —— 五本 Jupyter 交互式笔记本（依赖
   `python -m pip install -e '.[notebooks]'`，笔记本目录下启动 `jupyter lab`）：
 
   | 笔记本 | 内容 |
@@ -459,9 +469,9 @@ printf 'record start out.wav\nwait 10\nrecord stop\nquit\n' | python3 demo_cli.p
   | `03_live_sensors` | 光敏 ALS 实时曲线（遮挡传感器看变化） |
   | `04_knob_events` | 旋钮事件累积成表盘指针 |
 
-  笔记本经 `examples/notebooks/edu_notebook.py` 的薄包装直接调用 SDK，
+  笔记本经 `examples/notebooks/glasses_notebook.py` 的薄包装直接调用 SDK，
   不启动 CLI 子进程、不解析人类可读输出。先在仓库根目录安装 `pip install -e .`；
-  macOS 仍需主线程执行单元格。教学包装保留 `s.sensors()` 字典与 `knob_delta()`，
+  macOS 仍需主线程执行单元格。示例辅助封装保留 `s.sensors()` 字典与 `knob_delta()`，
   `events()` 的详情为类型化事件，`record()` 返回实际 WAV 或 `.opusraw` 路径。
 
 ### 会话示例
@@ -469,23 +479,23 @@ printf 'record start out.wav\nwait 10\nrecord stop\nquit\n' | python3 demo_cli.p
 ```
 $ python3 demo_cli.py --ctrl-port /dev/cu.LooktechGlasses --audio-port /dev/cu.LooktechGlasses-1 --img-port /dev/cu.LooktechGlasses-2
 connected! proto v1, firmware 0.1.1+609, caps: AUDIO_STREAM, PHOTO, SENSORS, INPUT_EVENTS
-edu> info
+glasses> info
 firmware version : 0.1.1+609 (0x0000010100000261)
 battery level    : 82%
 charging         : no
-edu> sensors
+glasses> sensors
 ALS (raw counts) : 517   (raw ADC counts, not lux)
 battery temp     : 28 degC
 BT core temp     : 41 degC
-edu> photo
+glasses> photo
 photo triggered (status OK) — waiting for image frames...
 [event] IMG_STATE START error=OK
 [event] IMG_STATE DONE error=OK
 [photo] saved captures/photo_20260707_153000_g1.jpg (48213 bytes, group 1)
-edu> record start hello.wav
+glasses> record start hello.wav
 recording -> hello.wav (Opus 16 kHz mono; file grows while recording)
 [event] AUDIO_STATE running source=MIC err=0
-edu> record stop
+glasses> record stop
 stopped. 250 packages, 2000 frames (~40.0 s), 0 lost package(s), 0 decode error(s)
 ```
 
@@ -596,13 +606,13 @@ N/2 秒且内容不可辨。
 ## 6. 目录结构
 
 ```
-edu-glasses-demo/
+looktech-glasses-demo/
 ├── demo_cli.py             # 通过安装的SDK调用眼镜，支持交互与管道
-├── pyproject.toml          # 固定SDK PyPI版本，注册edu-glasses命令
+├── pyproject.toml          # 固定SDK PyPI版本，注册looktech-glasses命令
 ├── AGENTS.md               # coding agent操作指南
 ├── docs/CLI_GUIDE.md       # 本文
 ├── examples/headset_demo.py
-├── examples/notebooks/     # 五本Notebook与教学薄包装
+├── examples/notebooks/     # 五本Notebook与示例辅助封装
 └── tests/test_cli.py       # 从SDK迁移的三项CLI检查
 ```
 

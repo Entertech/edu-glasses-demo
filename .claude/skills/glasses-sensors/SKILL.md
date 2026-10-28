@@ -1,6 +1,6 @@
 ---
 name: glasses-sensors
-description: Read the EDU glasses sensors (ambient light ALS, battery temperature, BT-core temperature) and device info (firmware version, battery, charging). Use when the user asks for sensor values or device status. 查眼镜传感器（光敏/温度）或设备信息（电量/固件版本）时使用。
+description: Read the Looktech Glasses sensors (ambient light ALS, battery temperature, BT-core temperature) and device info (firmware version, battery, charging). Use when the user asks for sensor values or device status. 查眼镜传感器（光敏/温度）或设备信息（电量/固件版本）时使用。
 ---
 
 # 读传感器与设备信息

@@ -1,6 +1,6 @@
 ---
 name: glasses-events
-description: Monitor live button presses, knob rotation, audio-state and image-state events from the EDU glasses. Use when the user wants to react to button/knob input from the glasses or debug why events are not arriving. 监听眼镜按键/旋钮事件、做交互实验、事件收不到时使用。
+description: Monitor live button presses, knob rotation, audio-state and image-state events from the Looktech Glasses. Use when the user wants to react to button/knob input from the glasses or debug why events are not arriving. 监听眼镜按键/旋钮事件、做交互实验、事件收不到时使用。
 ---
 
 # 监听按键 / 旋钮事件
@@ -32,7 +32,7 @@ printf 'wait 30\nquit\n' | python3 demo_cli.py --bt auto
 
 常见按键动作：SINGLE 单击、DOUBLE 双击、TRIPLE 三击、LONG 长按、
 LONG_RELEASE 长按抬起、PRESS 按下、RELEASE 抬起（完整 24 项见
-SDK仓库的[PROTOCOL.md §4](https://github.com/Entertech/edu-glasses-host/blob/feat/edu-sdk-integration/docs/PROTOCOL.md#4-事件evt) 的取值表）。
+SDK仓库的[PROTOCOL.md §4](https://github.com/Entertech/looktech-glasses-sdk/blob/main/docs/PROTOCOL.md#4-事件evt) 的取值表）。
 
 ## 行为边界（学生常问）
 

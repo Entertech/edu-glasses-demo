@@ -1,6 +1,6 @@
 ---
 name: glasses-ota
-description: Upgrade the EDU glasses firmware over the OTA SPP channel (0x2026) using a firmware package provided by the maintainers, and verify the new version after reboot. Use when the user asks to flash/upgrade the glasses firmware over Bluetooth or an OTA transfer fails. 给眼镜 OTA 升级固件、升级失败排查时使用。
+description: Upgrade the Looktech Glasses firmware over the OTA SPP channel (0x2026) using a firmware package provided by the maintainers, and verify the new version after reboot. Use when the user asks to flash/upgrade the glasses firmware over Bluetooth or an OTA transfer fails. 给眼镜 OTA 升级固件、升级失败排查时使用。
 ---
 
 # OTA 升级固件

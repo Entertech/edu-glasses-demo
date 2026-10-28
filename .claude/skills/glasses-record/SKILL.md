@@ -1,6 +1,6 @@
 ---
 name: glasses-record
-description: Record microphone audio from the EDU glasses to a WAV file (OPUS stream decoded on the host). Use when the user wants to record audio from the glasses or recording produces no/empty output. 用眼镜录音、录音文件为空或没有 WAV 输出时使用。
+description: Record microphone audio from the Looktech Glasses to a WAV file (OPUS stream decoded on the host). Use when the user wants to record audio from the glasses or recording produces no/empty output. 用眼镜录音、录音文件为空或没有 WAV 输出时使用。
 ---
 
 # 录音到 WAV
