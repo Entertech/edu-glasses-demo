@@ -1,17 +1,60 @@
-> CLI与开发示例已迁移到`Entertech/looktech-glasses-demo`。安装入口见[Demo README](../README.md)，
-> 公开SDK接口见`docs/API_REFERENCE.md`，实现与固件记录由内部维护。下文保留原有CLI操作、连接排障和历史验收说明。
-
 # Looktech Glasses CLI完整使用说明
 
 Looktech 眼镜**开发者固件**的上位机演示程序，通过四条经典蓝牙 SPP 服务与眼镜通信。
 
-开发者接入请先阅读 **[Python SDK 开发者指南](SDK_GUIDE.md)**：产品与开发者固件准备、安装与连接、能力发现、
+开发者接入请先阅读 **[Python SDK 开发者指南](../README.md)**：产品与开发者固件准备、安装与连接、能力发现、
 拍摄/录音、事件自定义、WiFi 媒体导出、错误处理及 API 索引。详细参数见
 [公开 API 参考](API_REFERENCE.md)；本文保留 CLI 快速体验和历史兼容记录。
 
+## 安装并运行 Demo
+
+只集成 Python SDK 时直接阅读 [README](../README.md)。需要体验 CLI、脚本或 Notebook 时，
+先准备开发者固件并在系统蓝牙设置配对 `EDU-Glasses-xxxx`，再克隆本仓库：
+
+```bash
+git clone https://github.com/Entertech/looktech-glasses-demo.git
+cd looktech-glasses-demo
+python -m venv .venv
+```
+
+macOS/Linux：`source .venv/bin/activate`；Windows PowerShell：`.\.venv\Scripts\Activate.ps1`。
+Demo 0.4.0 固定依赖 SDK 0.6.0。**新 PyPI 项目发布前，先在此虚拟环境中按
+[SDK 安装章节](../README.md#5-准备-python-环境并安装)安装匹配的本地 wheel**；发布后下面的安装会自动获取 SDK。
+
+```bash
+python -m pip install -e .
+looktech-glasses --bt auto
+```
+
+源码入口为 `python demo_cli.py --bt auto`。多台设备时用系统中的明确地址替换 `auto`。
+安装会拉取串口、macOS 蓝牙绑定及音频 Python 依赖；WAV 解码另需系统 libopus，
+缺少时保留 `.opusraw`。macOS 首次运行需允许终端/Python 宿主访问蓝牙。
+
+进入 `glasses>` 后先查询设备，再按需执行拍摄与导出：
+
+```text
+info
+sensors
+video config
+video config --resolution 1080p --orientation portrait --max-duration 60
+photo-save
+video start
+wait 5
+video stop
+media open /absolute/path/wifi.json
+media list
+media download all /absolute/path/captures
+media close
+quit
+```
+
+`wifi.json` 需要自行创建，字段见下文[媒体导出](#存储照片录像与-wifi-原件导出)。
+下载默认保留原件，删除需要显式执行 `media delete <id>`。`help` 查看完整命令。
+[示例脚本与 Notebook](#开发示例examples)分别有独立的运行入口；业务应用直接调用 SDK。
+
 ## 开发者接入版本
 
-SDK 0.6.0 发布后提供 [PyPI 二进制发行包](https://pypi.org/project/looktech-glasses-sdk/0.6.0/)；平台要求见[开发者指南](SDK_GUIDE.md#5-准备-python-环境并安装)。
+SDK 0.6.0 发布后提供 [PyPI 二进制发行包](https://pypi.org/project/looktech-glasses-sdk/0.6.0/)；平台要求见[开发者指南](../README.md#5-准备-python-环境并安装)。
 
 当前接入版本为独立 demo **0.4.0**、SDK **0.6.0**，配套固件为
 Looktech-Glasses-Device / feat/edu-main-integration（内部维护资料）。
@@ -85,17 +128,12 @@ python3 demo_cli.py --bt auto                  # 全平台：自动找已配对�
 WAV、按键 / 旋钮 / 状态事件、存储拍照、录像、WiFi 原件导出及显式删除、OTA 固件升级。
 
 > **耳机功能**（音乐播放和通话，A2DP/HFP）走操作系统的标准蓝牙音频设备，
-> *不在*本 demo 范围内——在系统里把眼镜选为音频输出/输入即可。
+> 由[系统耳机示例](#系统耳机示例)单独演示；CLI 使用 SPP 数据接口。
 
 环境要求：Python **3.9+**、`pyserial`（仅串口后备路径需要），以及可选的
 `opuslib` + 本机 libopus（录音输出 WAV 用）。
 
-```bash
-git clone https://github.com/Entertech/looktech-glasses-demo.git
-cd looktech-glasses-demo
-python3 -m pip install -r requirements.txt
-python3 -m pip install -e .
-```
+安装步骤统一见[安装并运行 Demo](#安装并运行-demo)，无需重复安装 `requirements.txt`。
 
 ## Python SDK
 
@@ -177,6 +215,12 @@ OTA 前须结束录音并等待拍照完成；升级期间拒绝其他设备请�
 
 ## 存储照片、录像与 WiFi 原件导出
 
+CLI 命令只接受 `video start`、`video stop`、`video status`，不接收 `operation` 或 `timeout`。
+CLI 内部使用 SDK 的默认参数：开始等待 20 秒、停止等待 45 秒，停止/查询使用本会话最近的 SDK 录像操作。
+这些等待时间不是录像时长。需要显式指定操作 ID 或等待时间时，在 Python 中调用
+`video_stop(operation=None, timeout=45.0)` / `video_status(operation=None)`，详见
+[SDK API 参考](API_REFERENCE.md#保存原片与录像)。这两个接口不能接管实体按键发起的本地录像。
+
 这组接口需要支持 MEDIA_CATALOG 的开发者 BT，复用公版 ISP 的 ID/元数据及 LAN 能力，
 无需修改或烧录 ISP。`media_capabilities()` 查询真实能力；只导出有真实 ID 的照片、视频
 及可确认登记的伴随文件。原 `photo()`/`record()` 仍为SPP JPEG 小图/麦克风音频。
@@ -249,14 +293,15 @@ CLI 忙碌区间内收到的开始意图即使在命令失败后才投递也丢�
 
 请先升级 SDK/demo，再更新原生输入固件，旧 demo 不识别新能力，可能重复拍摄。
 `ButtonEvent`/`KnobEvent` 格式兼容，开发者仍可自定义观察；同一拍摄键不要重复发拍摄命令。
-AI/翻译完整 PC 服务本次不提供。原生按键时序、灯效、音频文件尚待实机验收，本轮不烧录。
+AI/翻译完整 PC 服务本次不提供。原生按键、灯效与音频文件的既有实测范围见
+[当前验收记录](../README.md#16-兼容性与已知限制)；本次文档修改没有新增实机验收。
 
 照片/视频保存在眼镜，之后用 `media open/list/download` 导出。原有 `photo [out.jpg]` 仍是SPP JPEG 小图。
 
 ## 兼容范围与实机回归（2026-10-16）
 
 本节记录旧能力基线的历史验收，不代表 2026-10-20 新增功能的完整矩阵。当前接口和
-验收边界见 [SDK 使用说明](SDK_GUIDE.md#16-兼容性与已知限制)。
+验收边界见 [SDK 使用说明](../README.md#16-兼容性与已知限制)。
 
 协议仍为 EDU v1：`A5 5A` 同步字、版本/seq/LE 长度/CRC16、单帧 990 B 上限，
 4 条 SPP UUID/默认通道、8 条命令、4 类事件及音频/图片/OTA 格式保持不变。
@@ -457,22 +502,57 @@ printf 'record start out.wav\nwait 10\nrecord stop\nquit\n' | python3 demo_cli.p
 
 ### 开发示例（examples/）
 
-- `examples/headset_demo.py` —— 把眼镜当蓝牙音频设备：A2DP 放音 / HFP 录音 /
-  实时回环（`python3 examples/headset_demo.py list|play|record|loopback`）。
-- `examples/notebooks/` —— 五本 Jupyter 交互式笔记本（依赖
-  `python -m pip install -e '.[notebooks]'`，笔记本目录下启动 `jupyter lab`）：
+以下命令都在 Demo 仓库根目录执行，并先完成上面的安装；`--bt`、`--seconds`、
+`--media-id` 是示例脚本的命令行参数，SDK Python 方法的参数见 [API 参考](API_REFERENCE.md)。
 
-  | 笔记本 | 内容 |
-  |---|---|
-  | `01_photo_analysis` | 拍照 → PIL 显示 / RGB 直方图 / 边缘检测 |
-  | `02_audio_analysis` | 录音 → 波形图 + 声谱图 |
-  | `03_live_sensors` | 光敏 ALS 实时曲线（遮挡传感器看变化） |
-  | `04_knob_events` | 旋钮事件累积成表盘指针 |
+```bash
+# 最小连接与信息查询，不触发拍摄/录音
+python examples/sdk_quickstart.py --bt AA:BB:CC:DD:EE:FF
+# 观察 30 秒原始事件，不重复发送拍摄命令
+python examples/sdk_events.py --bt AA:BB:CC:DD:EE:FF --seconds 30
+# 默认仅列目录；真实媒体 ID 必须从目录选取
+python examples/sdk_media_export.py --bt AA:BB:CC:DD:EE:FF --wifi-config wifi.json
+python examples/sdk_media_export.py --bt AA:BB:CC:DD:EE:FF --wifi-config wifi.json --media-id 12 --output captures/export-01
+```
 
-  笔记本经 `examples/notebooks/glasses_notebook.py` 的薄包装直接调用 SDK，
-  不启动 CLI 子进程、不解析人类可读输出。先在仓库根目录安装 `pip install -e .`；
-  macOS 仍需主线程执行单元格。示例辅助封装保留 `s.sensors()` 字典与 `knob_delta()`，
-  `events()` 的详情为类型化事件，`record()` 返回实际 WAV 或 `.opusraw` 路径。
+只有一台明确可用的已配对设备时可用 `--bt auto`。WiFi 导出示例允许重复传入 `--media-id`，
+默认保留眼镜原件。凭据文件不要提交到仓库。源码见
+[sdk_quickstart.py](../examples/sdk_quickstart.py)、[sdk_events.py](../examples/sdk_events.py)、
+[sdk_media_export.py](../examples/sdk_media_export.py)。
+
+#### 交互式 Notebook
+
+```bash
+python -m pip install -e '.[notebooks]'
+cd examples/notebooks
+jupyter lab
+```
+
+| 笔记本 | 内容 |
+|---|---|
+| [01_photo_analysis.ipynb](../examples/notebooks/01_photo_analysis.ipynb) | 拍照、PIL 显示、RGB 直方图、边缘检测 |
+| [02_audio_analysis.ipynb](../examples/notebooks/02_audio_analysis.ipynb) | 录音、波形图与声谱图 |
+| [03_live_sensors.ipynb](../examples/notebooks/03_live_sensors.ipynb) | 光敏 ALS 实时曲线 |
+| [04_knob_events.ipynb](../examples/notebooks/04_knob_events.ipynb) | 旋钮事件交互 |
+| [05_wifi_media_export.ipynb](../examples/notebooks/05_wifi_media_export.ipynb) | 存储拍摄与 WiFi 原件导出 |
+
+Notebook 经 [glasses_notebook.py](../examples/notebooks/glasses_notebook.py) 辅助封装调用 SDK，
+不启动 CLI 子进程。它的 `GlassesSession` 在构造时自动连接，与 SDK 本身的构造行为不同；
+`sensors()` 返回字典，`events()` 返回包含类型化事件详情的元组列表，`record()` 返回实际 WAV
+或 `.opusraw` 路径。请按顺序执行单元格并在结束时 `close()`；macOS 仍在主线程执行。
+自己的应用直接导入 `looktech_glasses_sdk.GlassesSession`，不要依赖 Notebook 封装的返回约定。
+
+#### 系统耳机示例
+
+[headset_demo.py](../examples/headset_demo.py) 走系统 A2DP/HFP 音频设备，运行前先在系统连接眼镜并确认可用的输入/输出，
+与 SDK 的 SPP 麦克风推流分别使用。在仓库根目录安装并查看设备：
+
+```bash
+python -m pip install -e '.[headset]'
+python examples/headset_demo.py list
+```
+
+之后可用 `play`、`record`、`loopback`，参数见 `python examples/headset_demo.py --help`。
 
 ### 会话示例
 
@@ -607,10 +687,14 @@ N/2 秒且内容不可辨。
 
 ```
 looktech-glasses-demo/
+├── README.md               # 完整 SDK 使用指南及 Demo 导航
 ├── demo_cli.py             # 通过安装的SDK调用眼镜，支持交互与管道
 ├── pyproject.toml          # 固定SDK PyPI版本，注册looktech-glasses命令
 ├── AGENTS.md               # coding agent操作指南
-├── docs/CLI_GUIDE.md       # 本文
+├── docs/API_REFERENCE.md   # 完整公共方法参数、返回类型和异常
+├── docs/SDK_GUIDE.md       # 指向 README 的导航
+├── docs/CLI_GUIDE.md       # Demo 安装与操作说明（本文）
+├── examples/sdk_*.py       # 连接、事件与媒体导出示例
 ├── examples/headset_demo.py
 ├── examples/notebooks/     # 五本Notebook与示例辅助封装
 └── tests/test_cli.py       # 从SDK迁移的三项CLI检查

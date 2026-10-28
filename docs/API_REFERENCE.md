@@ -2,7 +2,7 @@
 
 > 本文使用全量更名后的 SDK 0.6.0 / Demo 0.4.0；新 PyPI 项目发布前安装本地 SDK wheel。历史实机记录不等于本次更名已完成实机复验。
 
-对应 SDK 0.6.0。安装与产品准备见[开发者指南](SDK_GUIDE.md)，CLI 见[CLI 使用说明](CLI_GUIDE.md)。
+对应 SDK 0.6.0。安装与产品准备见[README 中的 SDK 使用指南](../README.md)，CLI 见[CLI 使用说明](CLI_GUIDE.md)。
 本页维护公共 API、返回类型、事件和错误契约。已安装 wheel 同时提供 `.pyi` 与 `py.typed`，供 IDE 提示。
 SDK 实现由独立仓库维护；接入项目直接导入 `looktech_glasses_sdk`，无需实现仓库权限。
 
@@ -88,9 +88,11 @@ with GlassesSession(bt="auto") as glasses:
 
 | 目的 | 调用 | 传输/保存位置 | 返回成功的含义 |
 |---|---|---|---|
-| SPP 图片分析、小图回传 | `photo()` | JPEG 经 IMG SPP 传到 PC | 完整 JPEG 已写入 PC 文件 |
-| 保存原片 | `capture_saved_photo()` | 原片保存在眼镜，随后 WiFi 导出 | 公版拍照控制状态 DONE |
-| 录制视频 | `video_start()` / `video_stop()` | MP4 保存在眼镜，随后 WiFi 导出 | 公版 RECORDING / DONE 控制状态 |
+| SPP 图片分析、小图回传 | `photo(filename=None, timeout=30.0)` | JPEG 经 IMG SPP 传到 PC | 完整 JPEG 已写入 PC 文件 |
+| 保存原片 | `capture_saved_photo(timeout=45.0)` | 原片保存在眼镜，随后 WiFi 导出 | 公版拍照控制状态 DONE |
+| 开始录像 | `video_start(timeout=20.0)` | MP4 保存在眼镜，随后 WiFi 导出 | RECORDING 或实际终态 |
+| 停止录像 | `video_stop(operation=None, timeout=45.0)` | MP4 保存在眼镜，随后 WiFi 导出 | DONE 或实际终态 |
+| 查询录像 | `video_status(operation=None)` | 只查询控制状态 | 当前会话的录像操作状态 |
 
 `photo()` 不等于保存原片；麦克风 `record()` 也不等于录像。拍摄灯效由固件公共
 能力管理，不需要额外调用 `set_led()` 模拟。
@@ -127,14 +129,18 @@ with GlassesSession(bt="auto") as glasses:
     try:
         glasses.wait(5)
     finally:
-        stopped = glasses.video_stop(video.operation_id, timeout=45)
+        stopped = glasses.video_stop(operation=video.operation_id, timeout=45.0)
         print("视频控制结果：", stopped.state.name)
 ```
 
 返回 `CaptureResult(operation_id, kind, state, error)`，`kind` 为 1 照片、2 视频。
 `operation_id` 仅用于当前 CTRL owner 的控制状态查询，**不是媒体 ID**；同种媒体只
 保留最近一个操作状态。`media_status(photo.operation_id)` 查询照片或视频，
-`video_status(video.operation_id)` 查询视频；省略视频 ID 时使用本会话最近的录像操作。
+`video_status(operation=video.operation_id)` 查询视频。`video_stop` 与 `video_status` 的
+`operation=None` 都表示使用本会话最近的录像操作；不能接管重连前的操作或实体按键发起的本地录像。
+`video_stop` 的 `timeout=45.0` 是等待停止完成的秒数，不是录像时长。
+Demo CLI 的 `video stop` / `video status` 不接受这些 Python 参数，见
+[CLI 参数说明](CLI_GUIDE.md#存储照片录像与-wifi-原件导出)。
 
 `CaptureState` 包含 STARTING、RECORDING、STOPPING、DONE、FAILED、UNKNOWN。
 公版 DONE/RECORDING 不保证原件已发布、首帧已写入，也不会精确返回本次拍摄的媒体 ID。
@@ -475,16 +481,18 @@ with GlassesSession(bt="auto") as glasses:
 | `GlassesSession(bt="auto", *, out_dir="captures", ...)` | 创建会话，构造不连接；串口/通道参数见连接章节 |
 | `connect(timeout=6)` / `close()` | 返回当前会话 / 关闭所属资源 |
 | `is_connected` / `hello_ack` | 连接状态 / `HelloAck`，关闭后 ack 为 None |
-| `capabilities` / `supports(name_or_bits)` | 能力名称元组 / bool，需已连接 |
+| `capabilities` / `supports(capability)` | 能力名称元组 / bool；capability 接受能力名称或位值，需已连接 |
 | `info(timeout=5)` / `sensors(timeout=5)` | `DeviceInfo` / `SensorData` |
 | `photo(filename=None, timeout=30)` | `Path`，完整SPP JPEG 小图 已写入 PC |
 | `trigger_photo(filename=None, timeout=5)` / `wait_photo(timeout=30)` | 受理 `Response` / 完整图片 `Path` |
 | `capture_saved_photo(timeout=45)` | `CaptureResult`，原片保存的公版控制状态 |
 | `media_status(operation)` | `CaptureResult`，同 owner 最近操作的当前状态 |
+| `get_capture_state()` | `DeviceCaptureState`，只读照片/视频来源与状态，不取得录像控制权 |
 | `get_video_config()` | `VideoConfig`，保存值、请求目标及profile同步状态 |
 | `set_video_config(*, resolution=None, orientation=None, max_duration_s=None, timeout=45)` | 部分设置，返回`VideoConfig`；无字段或非法值报错 |
 | `video_start(timeout=20)` | `CaptureResult`，等待 RECORDING 或实际终态 |
-| `video_stop(operation=None, timeout=45)` / `video_status(operation=None)` | `CaptureResult`；省略 ID 使用最近录像操作 |
+| `video_stop(operation=None, timeout=45.0)` | `CaptureResult`；省略 ID 使用本会话最近录像操作，timeout 为停止等待秒数 |
+| `video_status(operation=None)` | `CaptureResult`；省略 ID 使用本会话最近录像操作 |
 | `record(filename, seconds, timeout=5)` | 实际音频文件 `Path` |
 | `record_start(filename="record.wav", timeout=5)` / `record_stop(timeout=5)` | 实际路径 / `AudioStats` |
 | `is_recording` | 麦克风推流状态，不代表视频录像 |
