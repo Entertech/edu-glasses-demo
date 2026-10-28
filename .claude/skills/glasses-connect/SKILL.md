@@ -1,6 +1,6 @@
 ---
 name: glasses-connect
-description: Connect to the EDU glasses over Bluetooth SPP and verify the handshake; diagnose pairing, channel, permission and dependency problems. Use when the user wants to connect to the glasses, the demo cannot find the device, the handshake fails, or Bluetooth errors/crashes occur. 连接教育版眼镜/连不上/握手失败/蓝牙报错时使用。
+description: Connect to the Looktech Glasses over Bluetooth SPP and verify the handshake; diagnose pairing, channel, permission and dependency problems. Use when the user wants to connect to the glasses, the demo cannot find the device, the handshake fails, or Bluetooth errors/crashes occur. 连接Looktech Glasses/连不上/握手失败/蓝牙报错时使用。
 ---
 
 # 连接眼镜并验证握手

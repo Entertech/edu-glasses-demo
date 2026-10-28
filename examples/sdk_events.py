@@ -2,7 +2,7 @@
 
 import argparse
 import math
-from edu_host import AmbiguousGlassesError, EduClientError, EduSession
+from looktech_glasses_sdk import AmbiguousGlassesError, GlassesClientError, GlassesSession
 
 
 def main():
@@ -13,14 +13,14 @@ def main():
     if not math.isfinite(args.seconds) or args.seconds <= 0:
         parser.error('--seconds must be finite and positive')
     try:
-        with EduSession(bt=args.bt) as glasses:
+        with GlassesSession(bt=args.bt) as glasses:
             glasses.add_event_listener(print)
             if glasses.supports('DEVICE_CAPTURE_STATE'):
                 print('Capture state:', glasses.get_capture_state())
             glasses.wait(args.seconds)
     except KeyboardInterrupt:
         return 0
-    except (AmbiguousGlassesError, EduClientError, OSError, ValueError) as error:
+    except (AmbiguousGlassesError, GlassesClientError, OSError, ValueError) as error:
         print('Failed:', error)
         return 1
     return 0

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """耳机（A2DP / HFP）演示：把眼镜当蓝牙音频设备来放音和录音。
 
-眼镜的耳机功能走操作系统的标准蓝牙音频协议，不经过 EDU SPP 协议：
+眼镜的耳机功能走操作系统的标准蓝牙音频协议，不经过 SDK 的 SPP 数据协议：
 
 * **A2DP**（高音质单向）：给眼镜放音乐/提示音；
 * **HFP**（通话档双向）：用眼镜的麦克风。一旦打开眼镜麦克风，蓝牙链路
@@ -151,7 +151,7 @@ def cmd_loopback(args) -> int:
 
 def main() -> int:
     parser = argparse.ArgumentParser(
-        description="EDU 眼镜耳机（A2DP/HFP）演示",
+        description="Looktech Glasses 耳机（A2DP/HFP）演示",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument("--device", default=DEFAULT_NAME_SUBSTRING,
                         help="音频设备名子串（按名字匹配眼镜）")

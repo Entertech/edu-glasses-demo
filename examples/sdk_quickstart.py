@@ -1,7 +1,7 @@
-"""Read device information through the independently installed EDU SDK."""
+"""Read device information through the independently installed Looktech Glasses SDK."""
 
 import argparse
-from edu_host import AmbiguousGlassesError, EduClientError, EduSession
+from looktech_glasses_sdk import AmbiguousGlassesError, GlassesClientError, GlassesSession
 
 
 def main():
@@ -9,13 +9,13 @@ def main():
     parser.add_argument('--bt', default='auto', help='Paired device address or auto')
     args = parser.parse_args()
     try:
-        with EduSession(bt=args.bt) as glasses:
+        with GlassesSession(bt=args.bt) as glasses:
             print('Protocol:', glasses.hello_ack.proto_ver)
             print('Capabilities:', glasses.capabilities)
             print('Device:', glasses.info())
             if glasses.supports('SENSORS'):
                 print('Sensors:', glasses.sensors())
-    except (AmbiguousGlassesError, EduClientError, OSError, ValueError) as error:
+    except (AmbiguousGlassesError, GlassesClientError, OSError, ValueError) as error:
         print('Failed:', error)
         return 1
     return 0

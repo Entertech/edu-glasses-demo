@@ -1,6 +1,6 @@
 ---
 name: glasses-control
-description: Control the EDU glasses device — reboot it, drive the inner RGB / outer indicator LEDs, or play built-in prompt tones. Use when the user asks to restart the glasses, light up / blink the LEDs, or make the glasses beep. 重启眼镜、控制 LED 灯效、播放提示音时使用。
+description: Control the Looktech Glasses device — reboot it, drive the inner RGB / outer indicator LEDs, or play built-in prompt tones. Use when the user asks to restart the glasses, light up / blink the LEDs, or make the glasses beep. 重启眼镜、控制 LED 灯效、播放提示音时使用。
 ---
 
 # 设备控制：重启 / LED / 提示音
